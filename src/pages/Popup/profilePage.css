@@ -1,0 +1,203 @@
+/* Profile Page Styles for TIMIO Extension */
+
+/* Profile-specific input styles */
+.auth-input {
+    background-color: #2a2a2a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #e0e0e0;
+    width: 100%;
+    margin-bottom: 10px;
+    font-family: inherit;
+  }
+  
+  /* Profile text area */
+  .bio-textarea {
+    background-color: #2a2a2a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #e0e0e0;
+    width: 100%;
+    margin-top: 10px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+  }
+  
+  /* Profile form buttons */
+  .profile-save-button {
+    background-color: #60a5fa;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .profile-save-button:hover {
+    background-color: #3b82f6;
+    box-shadow: 0 2px 10px rgba(96, 165, 250, 0.4);
+  }
+  
+  .profile-save-button:disabled {
+    background-color: #4b5563;
+    cursor: not-allowed;
+  }
+  
+  /* Profile animation item specific styles */
+  .animation-item.profile-item {
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    animation: profileGlow 3s infinite;
+  }
+  
+  @keyframes profileGlow {
+    0% { box-shadow: 0 0 5px rgba(96, 165, 250, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(96, 165, 250, 0.4); }
+    100% { box-shadow: 0 0 5px rgba(96, 165, 250, 0.2); }
+  }
+  
+  /* Profile form container */
+  .profile-form {
+    width: 100%;
+  }
+  
+  /* Button group for form actions */
+  .button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+  }
+  
+  /* Alert messages */
+  .profile-alert {
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 15px;
+    animation: fadeIn 0.4s ease-out;
+  }
+  
+  .profile-alert.error {
+    border-left: 4px solid #f56565;
+  }
+  
+  .profile-alert.success {
+    border-left: 4px solid #48bb78;
+  }
+  
+  /* Profile section headers */
+  .section-title {
+    font-size: 15px;
+    color: #60a5fa;
+    margin: 0 0 15px 0;
+    text-align: left;
+    font-weight: 600;
+  }
+  
+  /* Display field labels */
+  .field-label {
+    font-size: 13px;
+    color: #a0a0a0;
+    margin-bottom: 5px;
+    display: block;
+  }
+  
+  /* Display field values */
+  .field-value {
+    font-size: 15px;
+    color: #e0e0e0;
+    margin: 0;
+    word-break: break-word;
+  }
+  
+  /* Larger field for bio display */
+  .bio-display {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 10px;
+    min-height: 60px;
+    line-height: 1.5;
+  }
+  
+  /* Custom loading state */
+  .profile-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    text-align: center;
+  }
+  
+  .loading-icon {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #2a2a2a;
+    border-top: 3px solid #60a5fa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Profile section with slight emphasis */
+  .profile-section {
+    background-color: rgba(30, 30, 30, 0.5);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #333;
+  }
+  
+  /* Custom styles for the password form */
+  .password-form .animation-item {
+    padding: 15px;
+  }
+  
+  /* Override some styles for better fit in the popup */
+  .instruction-box {
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  
+  /* Make buttons more compact for popup */
+  .profile-button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  /* Make the form elements sharper for popup */
+  .animation-item {
+    padding: 15px;
+    margin-bottom: 12px;
+  }
+  
+  /* Add visual feedback for input fields */
+  .auth-input:focus, .bio-textarea:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+    outline: none;
+  }
+  
+  /* Profile link styling */
+  .profile-link {
+    color: #60a5fa;
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s ease;
+  }
+  
+  .profile-link:hover {
+    color: #90caf9;
+    text-decoration: underline;
+  }

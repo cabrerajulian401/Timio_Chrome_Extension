@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "TIMIO Chrome - Early Access",
+  "version": "1.0",
+  "description": "Article insights extension",
+  "background": { "service_worker": "background.bundle.js" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "TIMIOCircle128.png"
+  },
+
+  "icons": {
+    "16": "TIMIOCircle128.png",
+    "32": "TIMIOCircle128.png",
+    "48": "TIMIOCircle128.png",
+    "128": "TIMIOCircle128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.timio.news https://identitytoolkit.googleapis.com https://*.firebaseapp.com https://*.googleapis.com;"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lottie.min.js", "lottie-manager.js", "contentScript.bundle.js"],
+      "css": ["content.styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.timio.news/*"],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "Pivot_Icon.png",
+        "lottie-manager.js",
+        "Torch_Icon.png",
+        "lottie.min.js",
+        "torch.json",
+        "pivot.json"
+      ],
+      "matches": ["<all_urls>"],
+      "use_dynamic_url": true
+    }
+  ]
+}

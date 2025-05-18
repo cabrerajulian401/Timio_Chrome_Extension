@@ -1,0 +1,170 @@
+/* Reset CSS */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #000000;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+.auth-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000000;
+  padding: 0 20px;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-box h2 {
+  color: white;
+  text-align: center;
+  font-size: 24px;
+  font-weight: normal;
+  margin-bottom: 8px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  background-color: #2b2b2b;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+}
+
+.auth-input::placeholder {
+  color: #666666;
+}
+
+.auth-button {
+  width: 100%;
+  height: 40px;
+  margin-top: 4px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.auth-button:disabled {
+  background-color: #4b5563;
+  cursor: not-allowed;
+}
+
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.forgot-password {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.signup-text {
+  color: #666666;
+  font-size: 14px;
+}
+
+.signup-link {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.error-message {
+  padding: 12px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 14px;
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #ff4444;
+}
+
+.success-message {
+  padding: 12px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 14px;
+  background-color: rgba(0, 255, 0, 0.1);
+  color: #00ff95;
+}
+
+/* Chrome extension specific styles */
+@media (min-width: 360px) {
+  .auth-container {
+    width: 360px;
+    height: 600px;
+    position: relative;
+    padding: 0;
+  }
+}
+
+/* Ensure proper centering in extension popup */
+@media screen and (max-width: 359px) {
+  .auth-container {
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+  
+  .auth-box {
+    margin: 0 auto;
+  }
+}
+
+.auth-button-secondary {
+  background-color: transparent;
+  border: 1px solid #3b82f6;
+  color: #3b82f6;
+  text-decoration: none;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.auth-button-secondary:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
