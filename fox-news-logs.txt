@@ -1,0 +1,82 @@
+contentScript.bundle.js:1 Current URL: https://www.foxnews.com/politics/democrats-predict-passing-trumps-big-beautiful-bill-cost-many-republicans-seats
+contentScript.bundle.js:1 Existing port found, attempting cleanup
+contentScript.bundle.js:1 Existing port disconnected successfully
+contentScript.bundle.js:1 Creating new port connection
+contentScript.bundle.js:1 Chrome runtime ID: gcgndobbcnmdjcplgjbffjlcacjnphdd
+contentScript.bundle.js:1 New port created successfully: 
+{disconnect: ƒ, …}
+contentScript.bundle.js:1 Port disconnected. Error: undefined
+contentScript.bundle.js:1 Attempting to reconnect port in 1 second
+contentScript.bundle.js:1 Starting port creation process on: www.foxnews.com
+contentScript.bundle.js:1 Chrome runtime available: 
+{connect: ƒ, …}
+contentScript.bundle.js:1 Current URL: https://www.foxnews.com/politics/democrats-predict-passing-trumps-big-beautiful-bill-cost-many-republicans-seats
+contentScript.bundle.js:1 Existing port found, attempting cleanup
+contentScript.bundle.js:1 Existing port disconnected successfully
+contentScript.bundle.js:1 Creating new port connection
+contentScript.bundle.js:1 Chrome runtime ID: gcgndobbcnmdjcplgjbffjlcacjnphdd
+contentScript.bundle.js:1 New port created successfully: 
+{disconnect: ƒ, …}
+ag.app.js:6 [core.video] Metrics PageInfo: 
+{page: {…}, properties: {…}, options: {…}, traits: {…}}
+ag.core.js:260 [Modulr] Not initialized >> CONTEXT: core.auth | module: api
+ag.core.js:260 [Modulr] Not initialized >> CONTEXT: core.auth | module: models/middleware
+ag.core.js:260 [Modulr] Not initialized >> CONTEXT: core.auth | module: api
+ag.app.js:6 [core.video] Video Config XID: 65a64919-78b0-4f80-9f35-cfa7fe174d0f
+ag.app.js:6 [core.video] Strike loaded! >>>>>
+features.hola.js:188 Video enhancements powered by HolaSpark.com v1.165.158.T1591 Zone article_all_ab_enabled
+features.hola.js:188 http://holaspark.com/?cam=wm_devconsole
+features.hola.js:188 GDPR-CCPA mode enabled
+features.hola.js:188 Enabled features: Video preview, Watch next, Player thumbnails
+features.hola.js:188 Available features: Floating player, Image preview, Watch later, Position memory, Player auto play, Video search, Page sharing, TV video casting, YouTube-like controls, Video panel, Video heatmap, Newsreel, Sticky player, Top pages
+features.hola.js:200 Embedded in foxnews frame: https://static.foxnews.com/static/orion/html/video/iframe/vod.html?v=null#u…rats-predict-passing-trumps-big-beautiful-bill-cost-many-republicans-seats
+ag.app.js:6 [core.video] initializing leapmetrics: fnc
+ag.app.js:6 [core.video] Omniture omtr variable in video iframe: 
+AppMeasurement {version: '2.23.0', _il: Array(5), _in: 0, _c: 's_c', log: ƒ, …}
+ag.app.js:6 [core.video] passed config: 
+{autoplay: true, params: {…}, mode: 'html', name: 'inpage', rules: {…}, …}
+ag.app.js:6 [core.video] full video config: 
+{paths: {…}, resources: Array(2), plugins: {…}, params: {…}, captioning: {…}, …}
+static.foxnews.com/s…republicans-seats:1 Access to XMLHttpRequest at 'https://dpm.demdex.net/id?d_visid_ver=4.4.0&d_fieldgroup=AAM&d_rtbd=json&d_…Org&d_nsid=0&d_mid=0526666…&ts=1747943791106' from origin 'https://static.foxnews.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+VisitorAPI.js:2 
+ GET https://dpm.demdex.net/id?d_visid_ver=4.4.0&d_fieldgroup=AAM&d_rtbd=json&d_…Org&d_nsid=0&d_mid=0526666…&ts=1747943791106 net::ERR_FAILED 200 (OK)
+core.js:3 
+ GET https://cdn.segment.com/analytics.js/v1/null/analytics.min.js net::ERR_ABORTED 404 (Not Found)
+contentScript.bundle.js:1 Port disconnected. Error: undefined
+contentScript.bundle.js:1 Attempting to reconnect port in 1 second
+contentScript.bundle.js:1 Starting port creation process on: www.foxnews.com
+contentScript.bundle.js:1 Chrome runtime available: 
+{connect: ƒ, …}
+contentScript.bundle.js:1 Current URL: https://www.foxnews.com/politics/democrats-predict-passing-trumps-big-beautiful-bill-cost-many-republicans-seats
+contentScript.bundle.js:1 Existing port found, attempting cleanup
+contentScript.bundle.js:1 Existing port disconnected successfully
+contentScript.bundle.js:1 Creating new port connection
+contentScript.bundle.js:1 Chrome runtime ID: gcgndobbcnmdjcplgjbffjlcacjnphdd
+contentScript.bundle.js:1 New port created successfully: 
+{disconnect: ƒ, …}
+contentScript.bundle.js:1 Port disconnected. Error: undefined
+contentScript.bundle.js:1 Attempting to reconnect port in 1 second
+contentScript.bundle.js:1 Starting port creation process on: www.foxnews.com
+contentScript.bundle.js:1 Chrome runtime available: 
+{connect: ƒ, …}
+contentScript.bundle.js:1 Current URL: https://www.foxnews.com/politics/democrats-predict-passing-trumps-big-beautiful-bill-cost-many-republicans-seats
+contentScript.bundle.js:1 Existing port found, attempting cleanup
+contentScript.bundle.js:1 Existing port disconnected successfully
+contentScript.bundle.js:1 Creating new port connection
+contentScript.bundle.js:1 Chrome runtime ID: gcgndobbcnmdjcplgjbffjlcacjnphdd
+contentScript.bundle.js:1 New port created successfully: 
+{disconnect: ƒ, …}
+contentScript.bundle.js:1 Port disconnected. Error: undefined
+contentScript.bundle.js:1 Attempting to reconnect port in 1 second
+contentScript.bundle.js:1 Starting port creation process on: www.foxnews.com
+contentScript.bundle.js:1 Chrome runtime available: 
+{connect: ƒ, …}
+contentScript.bundle.js:1 Current URL: https://www.foxnews.com/politics/democrats-predict-passing-trumps-big-beautiful-bill-cost-many-republicans-seats
+contentScript.bundle.js:1 Existing port found, attempting cleanup
+contentScript.bundle.js:1 Existing port disconnected successfully
+contentScript.bundle.js:1 Creating new port connectionok
+contentScript.bundle.js:1 Chrome runtime ID: gcgndobbcnmdjcplgjbffjlcacjnphdd
+contentScript.bundle.js:1 New port created successfully: 
+{disconnect: ƒ, …}
+﻿
+
