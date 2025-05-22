@@ -228,7 +228,7 @@ const Main = ({ setIsAuthenticated }) => {
         <div className="quote-container">
           <p>"In the era of information overload, true insight comes from seeing multiple perspectives."</p>
           <div className="quote-author">TIMIO Team</div>
-          <a href="https://timio.news/support" className="support-link">Need help? Right clkick here and open link in new tab.</a>
+          <a href="https://timio.news/support" className="support-link" target="_blank" rel="noopener noreferrer">Need help? Click here for support.</a>
         </div>
 
         {/* Get Started Section with + Icon */}

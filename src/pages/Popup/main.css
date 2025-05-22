@@ -455,6 +455,23 @@
   color: #555;
 }
 
+/* Support Link Styling */
+.support-link {
+  display: block;
+  margin-top: 10px;
+  text-align: center;
+  color: #87CEEB; /* Light blue color */
+  text-decoration: underline; /* Always underlined */
+  font-size: 13px;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.support-link:hover {
+  color: #5FA8D3; /* Darker blue on hover */
+  text-decoration: underline; /* Keep underline on hover */
+}
+
 /* Animations and Transitions */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
