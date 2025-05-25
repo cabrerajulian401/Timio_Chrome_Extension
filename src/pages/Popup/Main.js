@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { app } from './firebase.js';
-import { getAuth, signOut } from 'firebase/auth/web-extension';
+// import { getAuth, signOut } from 'firebase/auth/web-extension'; // Removed for no-auth version
 import Lottie from 'react-lottie';
 import torchAnimationData from '../../assets/animations/torch.json';
 import pivotAnimationData from '../../assets/animations/pivot.json';
 import './main.css';
 
 const Main = ({ setIsAuthenticated }) => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('user@example.com'); // Default email for no-auth
   const [showToolTip, setShowToolTip] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
   const history = useHistory();
-  const auth = getAuth();
+  // const auth = getAuth(); // Removed for no-auth version
 
   // Use refs to safely reference animations
   const torchAnimationRef = useRef(null);
@@ -41,53 +41,6 @@ const Main = ({ setIsAuthenticated }) => {
     // Set mounted flag to true
     setIsMounted(true);
     
-    // Verify authentication on component mount
-    const verifyAuth = async () => {
-      try {
-        // Check localStorage first as it's more reliable in React components
-        const savedUser = localStorage.getItem('timioUser');
-        if (savedUser) {
-          const { email: userEmail } = JSON.parse(savedUser);
-          setEmail(userEmail || email);
-        } else {
-          // If no localStorage data, check chrome storage
-          if (typeof chrome !== 'undefined' && chrome.storage) {
-            try {
-              chrome.storage.local.get(['isLoggedIn', 'userId'], function(result) {
-                if (chrome.runtime.lastError) {
-                  console.log('Storage access handled gracefully');
-                  return;
-                }
-                
-                if (!result.isLoggedIn) {
-                  // Not logged in according to chrome storage
-                  if (setIsAuthenticated) {
-                    setIsAuthenticated(false);
-                    history.push('/login');
-                  }
-                } else if (result.userId) {
-                  // Create user data with the userID from chrome storage
-                  const userData = {
-                    uid: result.userId,
-                    email: email || 'user@example.com'
-                  };
-                  localStorage.setItem('timioUser', JSON.stringify(userData));
-                  console.log("Created user data in localStorage from chrome storage");
-                  setEmail(userData.email);
-                }
-              });
-            } catch (e) {
-              console.log('Chrome API error handled');
-            }
-          }
-        }
-      } catch (error) {
-        console.log('Error retrieving user data:', error);
-      }
-    };
-    
-    verifyAuth();
-    
     // Show tooltip on first visit
     try {
       const hasSeenTooltip = localStorage.getItem('hasSeenTooltip');
@@ -103,97 +56,10 @@ const Main = ({ setIsAuthenticated }) => {
     return () => {
       setIsMounted(false);
     };
-  }, [email, history, setIsAuthenticated]);
+  }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      
-      // Clear localStorage data
-      localStorage.removeItem('timioUser');
-      
-      // Clear chrome storage if available
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        try {
-          chrome.storage.local.remove(['authToken', 'isLoggedIn', 'userId'], () => {
-            // Handle any potential errors silently
-            if (chrome.runtime.lastError) {
-              console.log('Storage removal handled');
-            }
-            
-            // Try to notify background script
-            try {
-              chrome.runtime.sendMessage({
-                type: 'AUTH_STATE_CHANGED',
-                isLoggedIn: false,
-              });
-            } catch (msgError) {
-              console.log('Message error handled');
-            }
-          });
-        } catch (e) {
-          console.log('Chrome storage error handled');
-        }
-      }
-      
-      // Update authentication state in parent component
-      if (setIsAuthenticated) {
-        setIsAuthenticated(false);
-      }
-      
-      // Navigate to login page
-      if (isMounted) {
-        history.push('/login');
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  // Logout function removed - no authentication needed
 
-  // Enhanced goToProfile function
-  const goToProfile = () => {
-    console.log("Profile button clicked, navigating to /profilePage");
-    
-    // Check if user data exists in localStorage
-    const userData = localStorage.getItem('timioUser');
-    
-    if (!userData) {
-      console.log("User data not found in localStorage, creating temporary data");
-      
-      // Try to get userId from chrome storage if available
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        try {
-          chrome.storage.local.get(['userId', 'isLoggedIn'], function(result) {
-            const tempUserId = result.userId || ('temp-' + Date.now());
-            const tempUserData = {
-              uid: tempUserId,
-              email: email || 'user@example.com'
-            };
-            
-            localStorage.setItem('timioUser', JSON.stringify(tempUserData));
-            console.log("Created user data from chrome storage:", tempUserData);
-            
-            // Navigate to profile page after ensuring data exists
-            history.push('/profilePage');
-          });
-          return; // Exit early as we're handling navigation in the callback
-        } catch (e) {
-          console.log('Chrome API error handled, using fallback');
-        }
-      }
-      
-      // Fallback if chrome storage is not available or fails
-      const tempUserData = {
-        uid: 'temp-' + Date.now(),
-        email: email || 'user@example.com'
-      };
-      localStorage.setItem('timioUser', JSON.stringify(tempUserData));
-      console.log("Created fallback user data:", tempUserData);
-    }
-    
-    // Navigate to profile page
-    history.push('/profilePage');
-  };
 
   return (
     <div className="extension-container">
@@ -201,18 +67,7 @@ const Main = ({ setIsAuthenticated }) => {
       <header className="extension-header">
         <h1 className="logo">TIMIO</h1>
         <div className="header-buttons">
-          <button
-            className="profile-button"
-            onClick={goToProfile}
-            aria-label="Go to profile"
-          >
-            <svg viewBox="0 0 24 24" className="profile-icon">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </button>
-          <button className="logout-button" onClick={handleLogout}>
-            Logout
-          </button>
+          {/* Logout button removed - no authentication */}
         </div>
       </header>
 
@@ -373,11 +228,6 @@ const Main = ({ setIsAuthenticated }) => {
         {/* Footer Navigation */}
         <footer className="extension-footer">
           <nav className="footer-nav">
-            <button onClick={goToProfile}>My Profile</button>
-            <span className="nav-separator">•</span>
-            <button onClick={() => history.push('/subscription')}>
-              Subscription
-            </button>
           </nav>
         </footer>
       </main>
