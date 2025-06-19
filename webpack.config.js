@@ -41,7 +41,7 @@ var options = {
     popup: path.join(__dirname, 'src', 'pages', 'Popup', 'index.jsx'),
     // sidePanel: path.join(__dirname, 'src', 'pages', 'sidePanel', 'index.jsx'),
     background: path.join(__dirname, 'src', 'pages', 'Background', 'index.js'),
-    contentSimplified: path.join(__dirname, 'src', 'pages', 'Content', 'content.simplified.js'),
+    content: path.join(__dirname, 'src', 'pages', 'Content', 'index.js'),
     // devtools: path.join(__dirname, 'src', 'pages', 'Devtools', 'index.js'),
     // panel: path.join(__dirname, 'src', 'pages', 'Panel', 'index.jsx'),
     backgroundSimplified: path.join(__dirname, 'src', 'pages', 'Background', 'background.simplified.js'),

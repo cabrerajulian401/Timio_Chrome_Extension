@@ -1,3 +1,5 @@
+import Readability from './Readability.js';
+
 console.log('Hello, world!');
 // Add this at the start of your content.js, before the IIFE
 console.log('Content script loaded');
@@ -280,18 +282,13 @@ function ensureMenuVisibility() {
       }
     };
 
-    const truncateText = (text, maxLength = 150) => {
-      if (!text) return 'No description available';
-      text = text.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, ''); // Remove HTML tags
-      return text.length > maxLength
-        ? text.substring(0, maxLength).trim() + '...'
-        : text;
-    };
+    
 
     // Generate HTML for each article
     const articlesHTML = articles
       .map((article, index) => {
         console.log(`Processing article ${index + 1}:`, article); // Log each article for debugging
+        console.log('Article data:', article);
 
         if (!article.url) {
           console.warn('Article missing URL:', article);
@@ -299,10 +296,11 @@ function ensureMenuVisibility() {
         }
 
         const domain = article.source?.domain || getDomain(article.url);
-        const description =
-          article.description || article.summary || 'No description available';
+        // Show the article description/summary, or nothing if not available
+        
         const date = formatDate(article.pubDate);
-        const imageUrl = article.imageUrl || ''; // Fallback to empty string if no image URL
+        const fallbackImageUrl = `https://api.microlink.io/?url=${encodeURIComponent(article.url)}&meta=false&embed=image.url`;
+        const imageUrl = article.imageUrl || fallbackImageUrl;
         const title = article.title || 'Untitled';
         const authorsByline = article.authorsByline
           ? article.authorsByline.split(',')[0]
@@ -313,38 +311,19 @@ function ensureMenuVisibility() {
                    class="timio-pivot-article" 
                    target="_blank" 
                    rel="noopener noreferrer">
-                    ${
-                      imageUrl
-                        ? `
-                        <div class="timio-pivot-image">
-                            <div class="timio-image-placeholder"></div>
-                            <img src="${imageUrl}" 
-                                 alt="${title}"
-                                 onload="this.previousElementSibling.style.display='none'"
-                                 onerror="this.previousElementSibling.style.display='block';this.style.display='none'"
-                                 loading="lazy">
-                        </div>
-                    `
-                        : `
-                        <div class="timio-pivot-image">
-                            <div class="timio-image-placeholder"></div>
-                        </div>
-                    `
-                    }
+                    <div class="timio-pivot-image">
+                        <div class="timio-image-placeholder"></div>
+                        <img src="${imageUrl}" 
+                             alt="${title}"
+                             onerror="this.style.display='none'; this.previousElementSibling.style.display='block'"
+                             onload="this.previousElementSibling.style.display='none'"
+                             loading="lazy"
+                             crossorigin="anonymous">
+                    </div>
                     
                     <div class="timio-pivot-text">
                         <h3 class="timio-pivot-title">${title}</h3>
-                        <p class="timio-pivot-description">${truncateText(
-                          description
-                        )}</p>
-                        
                         <div class="timio-pivot-meta">
-                            <span class="timio-pivot-source">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path d="M21 2H3v16h5v4l4-4h5l4-4V2z"></path>
-                                </svg>
-                                ${domain}
-                            </span>
                             <span class="timio-pivot-date">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                     <circle cx="12" cy="12" r="10"></circle>
@@ -352,17 +331,21 @@ function ensureMenuVisibility() {
                                 </svg>
                                 ${date}
                             </span>
+                            <span class="timio-pivot-source">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M21 2H3v16h5v4l4-4h5l4-4V2z"></path>
+                                </svg>
+                                ${domain}
+                            </span>
                             ${
                               authorsByline
-                                ? `
-                                <span class="timio-pivot-author">
+                                ? `<span class="timio-pivot-author">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                         <circle cx="12" cy="7" r="4"></circle>
                                     </svg>
                                     ${authorsByline}
-                                </span>
-                            `
+                                </span>`
                                 : ''
                             }
                         </div>
@@ -482,8 +465,8 @@ function ensureMenuVisibility() {
       });
     }
     
-    // Set a timeout to show the stuck message after 20 seconds (changed from 10 seconds)
-    console.log('Setting stuck timeout for 20 seconds');
+    // Set a timeout to show the stuck message after 60 seconds
+    console.log('Setting stuck timeout for 60 seconds');
     const stuckTimeout = setTimeout(() => {
       console.log('Stuck timeout triggered');
       if (statusText) statusText.textContent = "Almost there...";
@@ -493,7 +476,7 @@ function ensureMenuVisibility() {
       } else {
         console.log('Stuck container not found at timeout');
       }
-    }, 20000); // Changed from 10000 to 20000 milliseconds
+    }, 60000); // Changed from 40000 to 60000 milliseconds
     
     // Store the timeout ID to clear it if loading completes normally
     if (progressBar) {
@@ -664,11 +647,20 @@ function ensureMenuVisibility() {
         // Start loading sequence
         startSimpleLoadingSequence(animationType, progressBar, statusText);
   
+        // Extract the article text from the page
+        const articleText = extractArticleText();
+        console.log('[TIMIO] Extracted article text:', articleText.slice(0, 200)); // Log first 200 chars
+        let message = { action, title };
+  
+        if (action === 'getInsights') {
+          message.content = articleText;
+        } else if (action === 'getPivotArticles') {
+          message.url = window.location.href;
+        }
+  
+        console.log('[TIMIO] Sending message through port:', message);
         // Send message through port
-        port.postMessage({
-          action,
-          url: window.location.href,
-        });
+        port.postMessage(message);
         
         // Add a message listener for completion
         const messageListener = (response) => {
@@ -1563,13 +1555,6 @@ function ensureMenuVisibility() {
         letter-spacing: -0.01em;
       }
   
-      .timio-pivot-description {
-        color: #e5e5e5;
-        font-size: 14px;
-        line-height: 1.6;
-        margin: 0 0 16px 0;
-      }
-  
       .timio-pivot-meta {
         display: flex;
         align-items: center;
@@ -1840,13 +1825,11 @@ function ensureMenuVisibility() {
           addCopyButtonListener();
         }, 100);
       } else if (response.articles) {
-        // Extract the nested articles array
-        const articlesArray = response.articles.articles;
+        // Use the articles array directly
+        const articlesArray = response.articles;
         console.log('Extracted articles array:', articlesArray);
-        
         content.style.display = 'none';
         pivotContent.style.display = 'block';
-        
         if (!articlesArray || articlesArray.length === 0) {
           pivotContent.innerHTML = `
             <div class="timio-error-message">
@@ -2029,4 +2012,23 @@ window.addEventListener('load', () => {
     attemptInjection();
   }
 });
+
+function extractArticleText() {
+  try {
+    // If Readability is available (should be if you include it in your content script)
+    if (typeof Readability !== 'undefined') {
+      const docClone = document.cloneNode(true);
+      const reader = new Readability(docClone);
+      const article = reader.parse();
+      if (article && article.textContent && article.textContent.trim().length > 0) {
+        console.log('[TIMIO] Readability extracted article:', article.title, article.textContent.slice(0, 200));
+        return article.textContent;
+      }
+    }
+  } catch (e) {
+    console.warn('[TIMIO] Readability extraction failed:', e);
+  }
+  // Fallback: return all visible text
+  return document.body.innerText || '';
+}
 })();

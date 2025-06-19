@@ -355,6 +355,10 @@ const PortManager = {
 
 // Message handling
 chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'timio-extension') {
+    Logger.log('Rejected connection with unexpected port name:', port.name);
+    return;
+  }
   Logger.log('New connection established');
   PortManager.addPort(port);
 

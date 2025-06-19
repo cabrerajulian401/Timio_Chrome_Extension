@@ -32,15 +32,16 @@ const Logger = {
 };
 
 // --- API Call Logic (prototype style, no retry logic) ---
-const SERVER_URL = 'http://localhost:3000'; // Change to your server as needed
+const SERVER_URL = 'https://deployment-timio-nd4v.vercel.app';
 
 /**
  * Calls the server API for summarization, insights, or opposing views.
  * @param {string} payload - The data to send (URL or article content).
  * @param {string} action - The action to determine the endpoint.
+ * @param {string} title - The title of the article (optional).
  * @returns {Promise<any>} - Resolves to the API response.
  */
-async function callServerAPI(payload, action) {
+async function callServerAPI(payload, action, title = '') {
     let endpoint;
     if (action === 'getSummary' || action === 'getInsights') {
         endpoint = action === 'getSummary' ? '/api/summarize' : '/api/insights';
@@ -51,13 +52,16 @@ async function callServerAPI(payload, action) {
     }
 
     const url = `${SERVER_URL}${endpoint}`;
+    const requestBody = { content: payload };
+    if (title) requestBody.title = title;
     Logger.log(`Calling ${action} at ${url}`);
+    Logger.log('Payload being sent to API:', requestBody);
 
     try {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: payload }),
+            body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
@@ -99,7 +103,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                 // For opposing views, use the tab's URL; otherwise, use article content
                 const payload = request.action === 'getOpposingViews' ? sender.tab.url : request.content;
-                const result = await callServerAPI(payload, request.action);
+                const result = await callServerAPI(payload, request.action, request.title);
 
                 // Determine which display action to use
                 const displayAction = request.action === 'getOpposingViews' ? 'displayOpposingViews' : 'displayResult';
@@ -133,4 +137,61 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 // --- Initialization Log ---
-Logger.log('Simplified background script initialized.'); 
+Logger.log('Simplified background script initialized.');
+
+// --- Port-based Communication for Content Script ---
+chrome.runtime.onConnect.addListener((port) => {
+    if (port.name !== 'timio-extension') {
+        Logger.log('Rejected connection with unexpected port name:', port.name);
+        return;
+    }
+    Logger.log('New port connection established:', port.name);
+
+    port.onMessage.addListener(async (message) => {
+        Logger.log('Port received message', { action: message.action });
+        try {
+            if (["getInsights", "getPivotArticles"].includes(message.action)) {
+                // For getPivotArticles, treat as getOpposingViews for API
+                const apiAction = message.action === 'getPivotArticles' ? 'getOpposingViews' : message.action;
+                const payload = apiAction === 'getOpposingViews' ? message.url : message.content;
+                const title = message.title || '';
+
+                // Only set a timeout for getInsights (not for getPivotArticles)
+                let timeoutId = null;
+                if (message.action === 'getInsights') {
+                    timeoutId = setTimeout(() => {
+                        Logger.error('Operation timed out');
+                        port.postMessage({ error: 'Operation timed out. Please try again.' });
+                    }, 25000); // 25 seconds
+                }
+
+                const result = await callServerAPI(payload, apiAction, title);
+                if (timeoutId) clearTimeout(timeoutId);
+
+                if (message.action === 'getPivotArticles') {
+                    let articles = result;
+                    if (typeof articles === 'string') {
+                        try {
+                            articles = JSON.parse(articles);
+                        } catch (e) {
+                            Logger.error('Failed to parse articles JSON', e);
+                            articles = [];
+                        }
+                    }
+                    port.postMessage({ articles });
+                } else {
+                    port.postMessage({ insights: result });
+                }
+            } else {
+                port.postMessage({ error: `Unknown action: ${message.action}` });
+            }
+        } catch (error) {
+            Logger.error('Port message handler failed:', error);
+            port.postMessage({ error: error.message || 'An error occurred' });
+        }
+    });
+
+    port.onDisconnect.addListener(() => {
+        Logger.log('Port disconnected:', port.name);
+    });
+}); 
