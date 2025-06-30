@@ -1,18 +1,683 @@
-#button-container{
-  box-sizing: border-box;
-}
+#timio-floating-menu {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 2147483647;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    user-select: none; /* Prevent text selection during drag */
+    touch-action: none; /* Better touch handling */
+    visibility: visible !important; /* Ensure menu is always visible */
+    opacity: 1 !important; /* Ensure menu is always visible */
+    transform: none !important; /* Prevent transform issues */
+    /* Add this for controlled visibility by popup */
+    display: block; /* Default to block, but controlled by applyFloatingMenuVisibility */
+  }
 
-.arrow{
-  width: 16px;
-  height: 16px;
-}
+      #timio-floating-menu.dragging {
+    opacity: 0.8 !important;
+    transition: opacity 0.2s ease;
+    cursor: grabbing;
+  }
+      .timio-menu-container {
+        position: relative;
+      }
 
-.Logoimg{
-  Width :41.79px;
-Height :16.56px;
-}
+      .timio-menu-items {
+        position: absolute;
+        bottom: 80px;
+        right: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(20px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-.mainBtn{
-  border: none;
-}
+      .timio-menu-items.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
 
+      .timio-menu-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: none;
+    cursor: grab; /* Change to grab cursor to indicate draggable */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0;
+    position: relative;
+    visibility: visible !important; /* Ensure button is always visible */
+  }
+
+      .timio-menu-button svg {
+        width: 24px;
+        height: 24px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .timio-menu-button .plus-icon {
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      .timio-menu-button .arrow-icon {
+        opacity: 0;
+        position: absolute;
+        transition: opacity 0.3s ease;
+      }
+
+      .timio-menu-button.active .plus-icon {
+        opacity: 0;
+      }
+
+      .timio-menu-button.active .arrow-icon {
+        opacity: 1;
+      }
+
+      .timio-menu-button:hover {
+        transform: scale(1.05);
+        background: #2563eb;
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
+      }
+
+      /* Hide the drag indicator completely */
+      .timio-drag-indicator {
+        display: none !important;
+      }
+
+      .timio-action-button {
+        width: 48px;
+        height: 48px;
+        padding: 0;           /* Explicitly remove padding */
+        margin: 0;            /* Explicitly remove margin */
+        border: none;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: none;
+        display: flex;        /* Changed to flex */
+        align-items: center; /* Center vertically */
+        justify-content: center; /* Center horizontally */
+        outline: none;
+      }
+
+      .timio-loading-spinner {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #3b82f6;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .button-image {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;        /* Added flex display */
+        align-items: center;
+        justify-content: center;
+      }
+
+      .timio-action-button img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        padding: 0;
+        margin: 0;
+      }
+
+      .timio-action-button:hover {
+        transform: scale(1.1);
+      }
+
+      .timio-action-button:hover .button-image {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .timio-tooltip {
+        position: absolute;
+        right: 64px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #1f2937;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .timio-tooltip::after {
+        content: '';
+        position: absolute;
+        right: -6px;
+        top: 50%;
+        transform: translateY(-50%);
+        border-width: 6px;
+        border-style: solid;
+        border-color: transparent transparent transparent #1f2937;
+      }
+
+      .timio-action-button:hover .timio-tooltip {
+        opacity: 1;
+        visibility: visible;
+        right: 60px;
+      }
+
+      .timio-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        width: 400px;
+        background: #1a1a1a;
+        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+        z-index: 2147483646;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .timio-modal.active {
+        display: block;
+        transform: translateX(0);
+      }
+
+      .timio-modal-content {
+        background: #1a1a1a;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .timio-modal-header {
+        padding: 20px;
+        background: #1a1a1a;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+      }
+
+      .timio-modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: white;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .timio-modal-close {
+        position: absolute;
+        top: 50%;
+        right: 20px;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 8px;
+        font-size: 24px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .timio-modal-close:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .timio-modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #1a1a1a;
+        color: white;
+      }
+
+      /* Updated spinner styles for centered layout */
+      .timio-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        padding: 40px 20px;
+        width: 100%;
+        background: #1a1a1a;
+      }
+
+      /* Loading column layout styles */
+      .timio-loading-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+      }
+
+      /* Animation container */
+      .timio-lottie-container {
+        width: 300px;
+        height: 300px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Updated progress bar styles */
+      .timio-progress {
+        width: 80%;
+        height: 4px;
+        background: #2d2d2d;
+        border-radius: 2px;
+        margin-top: 24px;
+        overflow: hidden;
+      }
+
+      .timio-progress-bar {
+        height: 100%;
+        background: #3b82f6;
+        width: 0%;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Updated status text styles */
+      .timio-status-text {
+        margin-top: 12px;
+        color: #9ca3af;
+        text-align: center;
+        font-size: 14px;
+        transition: opacity 0.3s ease;
+        width: 80%;
+      }
+
+      /* Spinner fallback */
+      .timio-spinner-fallback {
+        width: 48px;
+        height: 48px;
+        border: 3px solid #3b82f6;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spinner-rotate 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spinner-rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      @keyframes pulse {
+        0% { opacity: 0.8; }
+        50% { opacity: 1; }
+        100% { opacity: 0.8; }
+      }
+
+      .timio-error-message {
+        text-align: center;
+        padding: 24px;
+        color: #ef4444;
+      }
+
+      .timio-error-icon {
+        width: 48px;
+        height: 48px;
+        stroke: currentColor;
+        margin-bottom: 16px;
+      }
+
+      .timio-error-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+      }
+
+      .timio-error-text {
+        font-size: 14px;
+        color: #9ca3af;
+        margin: 0 0 20px 0;
+      }
+
+      .timio-refresh-button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+      }
+
+      .timio-refresh-button:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+      }
+
+      .timio-refresh-button svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+      }
+
+      /* Insights styles */
+      .timio-insight-section {
+        background: #2d2d2d;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.2s ease;
+      }
+
+      .timio-insight-section:hover {
+        transform: translateY(-2px);
+        border-color: rgba(59, 130, 246, 0.5);
+      }
+
+      .timio-insight-title {
+        color: #3b82f6;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+        letter-spacing: -0.01em;
+      }
+
+      .timio-insight-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .timio-insight-item:before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 8px;
+        width: 6px;
+        height: 6px;
+        background: #3b82f6;
+        border-radius: 50%;
+      }
+
+      /* Pivot styles */
+      .timio-pivot-container {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .timio-pivot-article {
+        background: #2d2d2d;
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+        display: block;
+      }
+
+      .timio-pivot-article:hover {
+        transform: translateX(4px);
+        background: #363636;
+        border-color: rgba(59, 130, 246, 0.5);
+      }
+
+      .timio-pivot-image {
+        width: 100%;
+        height: 200px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 16px;
+        background: #1a1a1a;
+        position: relative;
+      }
+
+      .timio-pivot-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+      }
+
+      .timio-pivot-article:hover .timio-pivot-image img {
+        transform: scale(1.05);
+      }
+
+      .timio-pivot-title {
+        color: #3b82f6;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
+        line-height: 1.4;
+        letter-spacing: -0.01em;
+      }
+
+      .timio-pivot-meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: #9ca3af;
+        font-size: 13px;
+      }
+
+      .timio-pivot-source,
+      .timio-pivot-date,
+      .timio-pivot-author {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .timio-pivot-meta svg {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2;
+      }
+
+      .timio-image-placeholder {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #2d2d2d 25%, #363636 50%, #2d2d2d 75%);
+        background-size: 200% 200%;
+        animation: shimmer 2s infinite;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: 200% 200%;
+        }
+        100% {
+          background-position: -200% -200%;
+        }
+      }
+
+      .timio-copy-button {
+        background: #2d2d2d;
+        color: #e5e5e5;
+        border: 1px solid rgba(59, 130, 246, 0.5);
+        border-radius: 8px;
+        padding: 12px 24px;
+        width: auto;
+        max-width: 180px;
+        margin: 24px auto 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+
+      .timio-copy-button:hover {
+        background: #363636;
+        border-color: #3b82f6;
+        transform: translateY(-1px);
+      }
+
+      .timio-copy-button.copied {
+        background: #065f46;
+        border-color: #059669;
+        color: white;
+      }
+
+      .timio-copy-button svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+      }
+
+      /* Scrollbar styles */
+      .timio-modal-body::-webkit-scrollbar {
+        width: 8px;
+        background-color: #1a1a1a;
+      }
+
+      .timio-modal-body::-webkit-scrollbar-thumb {
+        background-color: #4b5563;
+        border-radius: 4px;
+      }
+
+      .timio-modal-body::-webkit-scrollbar-thumb:hover {
+        background-color: #6b7280;
+      }
+
+      /* Mobile responsiveness */
+      @media (max-width: 768px) {
+        .timio-modal {
+          width: 100%;
+          max-width: 100%;
+        }
+
+        .timio-pivot-meta {
+          flex-wrap: wrap;
+        }
+      }
+       .timio-stuck-container {
+      margin-top: 20px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .timio-stuck-container p {
+      color: #9ca3af;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .timio-refresh-button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .timio-refresh-button:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    .timio-troubleshooting-link {
+      display: block;
+      color: #3b82f6;
+      font-size: 13px;
+      text-decoration: underline;
+      margin-top: 8px;
+    }
+
+    .timio-troubleshooting-link:hover {
+      color: #2563eb;
+    }
+
+          .timio-modal-footer {
+        padding: 16px 20px;
+        background: #1a1a1a;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        position: sticky;
+        bottom: 0;
+      }
+
+      .timio-support-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: #9ca3af;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s ease;
+      }
+
+      .timio-support-link:hover {
+        color: #3b82f6;
+      }
+
+      .timio-support-icon {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* Add this to the existing @media query for mobile */
+      @media (max-width: 768px) {
+        .timio-modal-footer {
+          padding: 12px 16px;
+        }
+
+        .timio-support-link {
+          font-size: 13px;
+        }
+      }
+    

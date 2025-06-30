@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIMIO Side Panel</title>
+    <!-- CSS will be injected by webpack -->
+</head>
+<body>
+    <div id="timio-modal" class="timio-modal active">
+        <div class="timio-modal-content">
+            <!-- Modern Header with Animation -->
+            <div class="timio-modal-header">
+                <div class="timio-header-content">
+                    <div class="timio-logo">
+                        <div id="header-animation" class="timio-logo-animation"></div>
+                    </div>
+                    <div class="timio-header-text">
+                        <h2 class="timio-modal-title">TIMIO Analysis</h2>
+                        <p class="timio-subtitle">AI-Powered Article Intelligence</p>
+                    </div>
+                </div>
+                <div class="timio-header-decoration"></div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="timio-modal-body">
+                <!-- Enhanced Loading State -->
+                <div class="timio-spinner">
+                    <div class="timio-loading-container">
+                        <div class="timio-loading-header">
+                            <div class="timio-pulse-indicator"></div>
+                            <h3 class="timio-loading-title">Analyzing Article</h3>
+                        </div>
+                        
+                        <div class="timio-animation-wrapper">
+                            <div id="animation-container" class="timio-lottie-container">
+                                <div class="timio-fallback-animation">
+                                    <div class="timio-orbit">
+                                        <div class="timio-planet"></div>
+                                        <div class="timio-moon"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timio-progress-section">
+                            <div class="timio-progress">
+                                <div class="timio-progress-bar" style="width: 0%;">
+                                    <div class="timio-progress-glow"></div>
+                                </div>
+                            </div>
+                            <p class="timio-status-text">Initializing analysis...</p>
+                        </div>
+
+                        <div class="timio-features-preview">
+                            <div class="timio-feature-item">
+                                <div class="timio-feature-icon">🔍</div>
+                                <span>Deep Content Analysis</span>
+                            </div>
+                            <div class="timio-feature-item">
+                                <div class="timio-feature-icon">🧠</div>
+                                <span>AI-Powered Insights</span>
+                            </div>
+                            <div class="timio-feature-item">
+                                <div class="timio-feature-icon">📊</div>
+                                <span>Bias Detection</span>
+                            </div>
+                        </div>
+
+                        <!-- Stuck/Help Section -->
+                        <div class="timio-stuck-container" style="display: none;">
+                            <div class="timio-stuck-content">
+                                <div class="timio-stuck-icon">⏰</div>
+                                <p>Taking longer than expected?</p>
+                                <div class="timio-stuck-actions">
+                                    <button class="timio-refresh-button" type="button">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.57L21 8"></path>
+                                            <path d="M21 3v5h-5"></path>
+                                        </svg>
+                                        Try Again
+                                    </button>
+                                    <a href="https://timio.news/support" class="timio-help-link" target="_blank">
+                                        Get Help
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Areas -->
+                <div class="timio-insights-content" style="display: none;"></div>
+                <div class="timio-pivot-content" style="display: none;"></div>
+            </div>
+
+            <!-- Modern Footer -->
+            <div class="timio-modal-footer">
+                <div class="timio-footer-content">
+                    <a href="https://timio.news" class="timio-brand-link" target="_blank">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        <span>Powered by TIMIO</span>
+                    </a>
+                    <div class="timio-footer-links">
+                        <a href="https://timio.news/support" class="timio-support-link" target="_blank">
+                            Support
+                        </a>
+                        <span class="timio-divider">•</span>
+                        <a href="https://timio.news/privacy" class="timio-privacy-link" target="_blank">
+                            Privacy
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="Lottie.min.js"></script>
+    <script src="Lottie_Manager.js"></script>
+    <script src="sidepanel.js"></script>
+</body>
+</html>

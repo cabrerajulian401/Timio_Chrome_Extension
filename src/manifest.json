@@ -17,49 +17,42 @@
     "128": "TIMIOCircle128.png"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000 https://api.timio.news https://identitytoolkit.googleapis.com https://*.firebaseapp.com https://*.googleapis.com https://deployment-timio-nd4v.vercel.app;"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' ws://localhost:3000 https://identitytoolkit.googleapis.com https://*.firebaseapp.com https://*.googleapis.com https://serverfortimio.vercel.app;"
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
+      "matches": ["<all_urls>"],
       "js": [
-        "lottie.min.js",
-        "lottie-manager.js",
-        "content.bundle.js"
-      
+        "lottie.min.js",        
+        "lottie-manager.js",   
+        "content.bundle.js",    
+        "Readability.js" 
       ],
-      "css": [
-        "content.styles.css"
-      ],
+      "css": ["content.styles.css"], 
       "run_at": "document_end"
     }
   ],
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "sidePanel", 
+    "scripting"
   ],
-  "host_permissions": [
-    "https://api.timio.news/*",
-    "https://serverfortimio.vercel.app/*",
-    "https://deployment-timio-nd4v.vercel.app/*"
-  ],
+  "host_permissions": ["https://serverfortimio.vercel.app/*", "<all_urls>"],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "web_accessible_resources": [
     {
       "resources": [
-        "Pivot_Icon.png",
-        "lottie-manager.js",
-        "Torch_Icon.png",
-        "lottie.min.js",
-        "torch.json",
-        "pivot.json",
-        "summarize-icon.png"
+        "assets/animations/torch.json",
+        "assets/animations/pivot.json",
+        "Torch_Icon.png",    
+        "Pivot_Icon.png",    
+        "summarize-icon.png", 
+        "content.styles.css"
       ],
-      "matches": [
-        "<all_urls>"
-      ],
-      "use_dynamic_url": true
+      "matches": ["<all_urls>"]
     }
   ]
 }

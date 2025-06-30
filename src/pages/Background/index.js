@@ -1,13 +1,15 @@
 console.log('Background page running');
-// Configuration
-const API_BASE_URL = 'https://api.timio.news';
+
+// --- Configuration ---
+// Changed to the new server address as requested
+const API_BASE_URL = 'https://serverfortimio.vercel.app'; 
 const API_ENDPOINTS = {
-  GET_CONTENT: `${API_BASE_URL}/api/content`,
-  GET_INSIGHTS: `${API_BASE_URL}/api/insights`,
-  GET_TAGS: `${API_BASE_URL}/api/tags`,
+  GET_CONTENT: `${API_BASE_URL}/api/content`,    // Assuming you have a /api/content endpoint
+  GET_INSIGHTS: `${API_BASE_URL}/api/insights`,  // Assuming you have a /api/insights endpoint
+  GET_PIVOT: `${API_BASE_URL}/api/pivot`,        // Changed to GET_PIVOT as it handles pivot articles (getTags in old code)
 };
 
-// Logging utility
+// --- Logger Utility ---
 const Logger = {
   log(message, data = null) {
     const timestamp = new Date().toISOString();
@@ -35,63 +37,7 @@ const Logger = {
   },
 };
 
-// Add Authentication Management
-// ============================
-
-// Listen for auth state changes from popup
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  if (request.type === 'AUTH_STATE_CHANGED') {
-    Logger.log('Auth state changed:', { isLoggedIn: request.isLoggedIn });
-    
-    // Store auth state in local storage
-    chrome.storage.local.set({
-      isLoggedIn: request.isLoggedIn
-    }, function() {
-      if (chrome.runtime.lastError) {
-        Logger.error('Error saving auth state:', chrome.runtime.lastError);
-      } else {
-        Logger.log('Auth state saved successfully');
-      }
-    });
-    
-    // Send response
-    sendResponse({ success: true });
-  }
-  
-  // Return true to indicate asynchronous response
-  return true;
-});
-
-// Function to get current auth state
-const getAuthState = () => {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['isLoggedIn', 'authToken', 'userId'], function(result) {
-      if (chrome.runtime.lastError) {
-        Logger.error('Error accessing storage:', chrome.runtime.lastError);
-        resolve({ isLoggedIn: false });
-        return;
-      }
-      
-      resolve({
-        isLoggedIn: !!result.isLoggedIn,
-        hasToken: !!result.authToken,
-        userId: result.userId
-      });
-    });
-  });
-};
-
-// Check auth state when extension starts
-chrome.runtime.onStartup.addListener(async function() {
-  try {
-    const authState = await getAuthState();
-    Logger.log('Extension started, auth state:', authState);
-  } catch (error) {
-    Logger.error('Error checking auth state on startup:', error);
-  }
-});
-
-// Cache manager with logging
+// --- Cache Manager ---
 const CacheManager = {
   async set(key, data) {
     try {
@@ -138,7 +84,7 @@ const CacheManager = {
   },
 };
 
-// API Service with improved request handling
+// --- API Service with Retry Logic ---
 const ApiService = {
   async fetchWithRetry(url, options, retries = 5) {
     Logger.log(`Making API request to: ${url}`, {
@@ -151,15 +97,11 @@ const ApiService = {
       try {
         Logger.log(`Request attempt ${i + 1} of ${retries}`);
 
-        // Ensure proper URL for GET requests with params
         const finalUrl =
           options.method === 'GET' && options.params
             ? `${url}?${new URLSearchParams(options.params)}`
             : url;
 
-        console.log('finalUrl:', finalUrl);
-
-        // Log request details
         Logger.log('Request details:', {
           url: finalUrl,
           method: options.method,
@@ -192,19 +134,19 @@ const ApiService = {
         lastError = error;
         Logger.error(`API request attempt ${i + 1} failed`, error);
 
-        if (i === retries - 1) break;
+        if (i === retries - 1) break; // Don't retry on the last attempt
 
-        const delay = Math.pow(2, i) * 3000;
+        const delay = Math.pow(2, i) * 3000; // Exponential backoff starting at 3 seconds
         Logger.log(`Retrying in ${delay}ms`);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
-    throw lastError;
+    throw lastError; // Throw the last error if all retries fail
   },
 };
 
-// Content Service with improved data handling
+// --- Content Service (Combined functions for clarity and reduced redundancy) ---
 const ContentService = {
   async getArticleContent(url, useCache = true) {
     Logger.log(`Getting article content for URL: ${url}`, { useCache });
@@ -218,16 +160,15 @@ const ContentService = {
           return cached.data;
         }
       } catch (error) {
-        Logger.error('Cache retrieval failed', error);
+        Logger.error('Cache retrieval failed for article content', error);
       }
     }
 
     try {
       Logger.log(`Fetching fresh content from API`);
-
       const data = await ApiService.fetchWithRetry(API_ENDPOINTS.GET_CONTENT, {
         method: 'GET',
-        params: { article_url: url },
+        params: { article_url: url }, // Assuming your content endpoint expects article_url as a GET param
       });
 
       if (!data || !data.clean_text) {
@@ -243,7 +184,7 @@ const ContentService = {
   },
 
   async getInsights(content, url, useCache = true) {
-    const cacheKey = `insights_${url}`;
+    const cacheKey = `insights_${url}`; // Cache based on URL, not just truncated content
     if (useCache) {
       try {
         const cached = await CacheManager.get(cacheKey);
@@ -252,7 +193,7 @@ const ContentService = {
           return cached.data;
         }
       } catch (error) {
-        Logger.error('Cache retrieval failed', error);
+        Logger.error('Cache retrieval failed for insights', error);
       }
     }
 
@@ -263,220 +204,310 @@ const ContentService = {
         throw new Error('Invalid content provided for insights');
       }
 
-      const insights = await ApiService.fetchWithRetry(
+      const insightsResponse = await ApiService.fetchWithRetry(
         API_ENDPOINTS.GET_INSIGHTS,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify({
             content: content.clean_text,
+            // Assuming your insights API can handle an optional 'url' or 'title' if needed
+            url: url
           }),
         }
       );
+      
+      // Assuming insightsResponse has a 'result' property based on your API structure
+      if (!insightsResponse || !insightsResponse.result) {
+          throw new Error("Invalid insights response format from API");
+      }
 
-      await CacheManager.set(cacheKey, insights);
-      return insights;
+      await CacheManager.set(cacheKey, insightsResponse.result); // Cache only the result
+      return insightsResponse.result; // Return the actual insight text
     } catch (error) {
       Logger.error('Failed to get insights', error);
       throw error;
     }
   },
 
-  async getTags(content, url, useCache = true) {
-    const cacheKey = `tags_${url}`;
+  async getPivotArticles(content, url, useCache = true) { // Renamed from getTags for clarity
+    const cacheKey = `pivot_${url}`; // Cache based on URL for pivot articles
     if (useCache) {
       try {
         const cached = await CacheManager.get(cacheKey);
         if (cached && !CacheManager.isExpired(cached.timestamp)) {
-          Logger.log('Returning cached tags');
+          Logger.log('Returning cached pivot articles');
           return cached.data;
         }
       } catch (error) {
-        Logger.error('Cache retrieval failed', error);
+        Logger.error('Cache retrieval failed for pivot articles', error);
       }
     }
 
     try {
-      Logger.log('Requesting content tags');
+      Logger.log('Requesting pivot articles');
 
       if (!content || !content.clean_text) {
-        throw new Error('Invalid content provided for tags');
+        throw new Error('Invalid content provided for pivot articles');
       }
 
-      const tags = await ApiService.fetchWithRetry(API_ENDPOINTS.GET_TAGS, {
+      const pivotResponse = await ApiService.fetchWithRetry(API_ENDPOINTS.GET_PIVOT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           content: content.clean_text,
+          url: url // Send the original URL for pivot, as requested
         }),
       });
 
-      await CacheManager.set(cacheKey, tags);
-      return tags;
+      // Assuming pivotResponse has a 'result' property containing the articles array
+      if (!pivotResponse || !pivotResponse.result) {
+          throw new Error("Invalid pivot articles response format from API");
+      }
+
+      // Ensure the result is an array before caching/returning
+      let articles = pivotResponse.result;
+      if (typeof articles === 'string') {
+        try {
+          articles = JSON.parse(articles);
+        } catch (e) {
+          Logger.error('Failed to parse articles JSON from pivot API', e);
+          articles = []; // Default to empty array on parse failure
+        }
+      }
+      if (!Array.isArray(articles)) {
+          Logger.warn('Pivot API did not return an array of articles, defaulting to empty array.');
+          articles = [];
+      }
+
+      await CacheManager.set(cacheKey, articles);
+      return articles;
     } catch (error) {
-      Logger.error('Failed to get tags', error);
+      Logger.error('Failed to get pivot articles', error);
       throw error;
     }
   },
 };
 
-// Port Manager with improved message handling
-const PortManager = {
-  ports: new Set(),
 
-  addPort(port) {
-    Logger.log(`New port connection: ${port.name}`);
-    this.ports.add(port);
-    port.onDisconnect.addListener(() => {
-      Logger.log(`Port disconnected: ${port.name}`);
-      this.ports.delete(port);
+// --- Chrome Runtime Communication Handlers ---
+
+// Handle messages from the popup/content script (used for side panel interaction)
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'AUTH_STATE_CHANGED') {
+    Logger.log('Auth state changed from popup:', { isLoggedIn: request.isLoggedIn });
+    // This part is for authentication management, which you mentioned removing.
+    // However, if you're tracking login state at all, storing it is still relevant.
+    // If auth is completely removed, this block can be deleted.
+    chrome.storage.local.set({ isLoggedIn: request.isLoggedIn }, () => {
+      if (chrome.runtime.lastError) {
+        Logger.error('Error saving auth state:', chrome.runtime.lastError);
+      } else {
+        Logger.log('Auth state saved successfully');
+      }
     });
-  },
+    sendResponse({ success: true });
+    return true; // Indicate asynchronous response
+  }
+  
+  // Handlers for side panel actions
+  if (["getSummary", "getInsights", "getOpposingViews"].includes(request.action)) {
+    (async () => {
+      try {
+        Logger.log(`Processing ${request.action} for side panel: "${request.title}"`);
 
-  isPortActive(port) {
-    const active = this.ports.has(port);
-    Logger.log(`Checking port status: ${port.name}`, { active });
-    return active;
-  },
+        if (sender.tab && sender.tab.id) {
+          await chrome.sidePanel.open({ tabId: sender.tab.id });
+          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for panel to open
+        }
 
-  sendMessage(port, message) {
-    if (this.isPortActive(port)) {
-      port.postMessage(message);
-      Logger.log('Message sent through port', {
-        type: message.error ? 'error' : 'success',
-      });
-    }
-  },
-};
+        await chrome.runtime.sendMessage({
+          action: 'showLoading',
+          title: request.title || 'Processing...'
+        });
 
-// Message handling
+        // Determine payload: for 'getOpposingViews', use sender.tab.url
+        // For 'getInsights'/'getSummary', use request.content (which should be clean_text from content script)
+        let processedContent;
+        let finalResult;
+        let displayAction;
+
+        const articleUrl = sender.tab ? sender.tab.url : null; // Get current tab's URL
+
+        // For Insights and Pivot, we first need the clean article content from the URL
+        if (request.action === 'getInsights' || request.action === 'getOpposingViews') {
+            if (!articleUrl) {
+                throw new Error("Article URL not available for content extraction.");
+            }
+            processedContent = await ContentService.getArticleContent(articleUrl);
+            Logger.log("Article content retrieved for API call.");
+        } else {
+            // For getSummary (if you add it back and use content directly from content script)
+            processedContent = { clean_text: request.content };
+        }
+
+        if (request.action === 'getInsights') {
+          finalResult = await ContentService.getInsights(processedContent, articleUrl);
+          displayAction = 'displayResult'; // For insights, display as general result
+        } else if (request.action === 'getOpposingViews') {
+          finalResult = await ContentService.getPivotArticles(processedContent, articleUrl);
+          displayAction = 'displayOpposingViews'; // Specific action for pivot articles
+        } else if (request.action === 'getSummary') { // If you re-introduce getSummary
+          // Assuming a similar API call to insights for summarization
+          // finalResult = await ContentService.getSummary(processedContent, articleUrl);
+          // displayAction = 'displayResult';
+          throw new Error("Summarize action not implemented in this version.");
+        }
+
+        await chrome.runtime.sendMessage({
+          action: displayAction,
+          result: finalResult,
+          title: request.title
+        });
+        Logger.log(`${request.action} completed successfully`);
+
+      } catch (error) {
+        Logger.error(`Process for ${request.action} failed:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        await chrome.runtime.sendMessage({
+          action: 'displayResult',
+          result: `❌ **Error occurred:**\n\n${errorMessage}`,
+          title: 'Error'
+        });
+      }
+    })();
+    return true; // Indicate asynchronous response
+  }
+});
+
+
+// Handle messages from content script via long-lived port (for insights/pivot tools)
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== 'timio-extension') {
     Logger.log('Rejected connection with unexpected port name:', port.name);
     return;
   }
-  Logger.log('New connection established');
-  PortManager.addPort(port);
+  Logger.log('New connection established from content script');
 
   port.onMessage.addListener(async (message) => {
-    Logger.log('Received message', { action: message.action });
+    Logger.log('Port received message', { action: message.action });
 
-    const operationTimeout = setTimeout(() => {
-      if (PortManager.isPortActive(port)) {
-        Logger.error('Operation timed out');
-        PortManager.sendMessage(port, {
-          error: 'Operation timed out. Please try again.',
-        });
-      }
-    }, 70000);
+    // Use a specific timeout for insights only, as pivot can take longer
+    let timeoutId = null;
+    if (message.action === 'getInsights') {
+      timeoutId = setTimeout(() => {
+        Logger.error('Insights operation timed out');
+        port.postMessage({ error: 'Analysis timed out. Please try again.' });
+      }, 70000); // 70 seconds for insights
+    }
 
     try {
-      if (!PortManager.isPortActive(port)) {
-        Logger.log('Port is no longer active, ignoring message');
-        return;
+      // Fetch article content first if needed
+      let articleContent;
+      if (message.url) {
+          articleContent = await ContentService.getArticleContent(message.url);
+          if (!articleContent || !articleContent.clean_text) {
+              throw new Error("Could not extract clean text from article.");
+          }
+      } else if (message.content) {
+          // If content script sent content directly (less robust without full URL processing)
+          articleContent = { clean_text: message.content };
+      } else {
+          throw new Error("No URL or content provided for analysis.");
       }
 
-      switch (message.action) {
-        case 'getInsights':
-          try {
-            console.log('current article url:', message.url);
-            Logger.log('Processing getInsights request');
-            const content = await ContentService.getArticleContent(message.url);
-            Logger.log('Content retrieved, fetching insights');
-
-            const insights = await ContentService.getInsights(
-              content,
-              message.url
-            );
-            PortManager.sendMessage(port, { insights });
-          } catch (error) {
-            Logger.error('Failed to get insights', error);
-            PortManager.sendMessage(port, {
-              error: 'Unable to analyze this article.',
-            });
-          }
-          break;
-
-        case 'getPivotArticles':
-          try {
-            Logger.log('Processing getPivotArticles request');
-            const content = await ContentService.getArticleContent(message.url);
-
-            Logger.log('Content retrieved, length:', {
-              textLength: content.clean_text?.length,
-              htmlLength: content.clean_html?.length,
-            });
-
-            const articles = await ContentService.getTags(content, message.url);
-
-            Logger.log('Related articles retrieved', {
-              hasArticles: !!articles,
-              articleCount: Array.isArray(articles)
-                ? articles.length
-                : 'not an array',
-            });
-
-            PortManager.sendMessage(port, { articles });
-          } catch (error) {
-            Logger.error('Failed to get related articles', error);
-            PortManager.sendMessage(port, {
-              error: 'Unable to find related articles.',
-            });
-          }
-          break;
-
-        default:
-          Logger.error(`Unknown action: ${message.action}`);
-          PortManager.sendMessage(port, {
-            error: `Unknown action: ${message.action}`,
-          });
+      let result;
+      if (message.action === 'getInsights') {
+        result = await ContentService.getInsights(articleContent, message.url);
+        port.postMessage({ insights: result });
+      } else if (message.action === 'getPivotArticles') {
+        result = await ContentService.getPivotArticles(articleContent, message.url);
+        port.postMessage({ articles: result });
+      } else {
+        Logger.error(`Unknown action received via port: ${message.action}`);
+        port.postMessage({ error: `Unknown action: ${message.action}` });
       }
     } catch (error) {
-      Logger.error('Unexpected error in message handler', error);
-      PortManager.sendMessage(port, {
-        error: 'An unexpected error occurred.',
-      });
+      Logger.error('Port message handler failed:', error);
+      port.postMessage({ error: error.message || 'An unexpected error occurred' });
     } finally {
-      clearTimeout(operationTimeout);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
+  });
+
+  port.onDisconnect.addListener(() => {
+    Logger.log('Port disconnected:', port.name);
   });
 });
 
-// Handler for auth token validation (if needed)
-// You can add token validation logic here if your backend requires it
-const validateAuthToken = async () => {
-  try {
-    const { hasToken, isLoggedIn } = await getAuthState();
-    
-    if (!hasToken && isLoggedIn) {
-      // Token missing but marked as logged in - this is inconsistent
-      await chrome.storage.local.set({ isLoggedIn: false });
-      Logger.log('Cleared inconsistent login state (no token)');
-    }
-    
-    // Here you could also validate the token with your backend
-    // if needed for your authentication flow
-  } catch (error) {
-    Logger.error('Auth validation error:', error);
+// --- Side Panel Action Button ---
+// Opens the side panel when the extension icon is clicked
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id) { // Ensure tab.id exists before trying to open side panel
+    chrome.sidePanel.open({ tabId: tab.id }).catch((error) => {
+      Logger.error("Failed to open side panel:", error);
+      // Fallback for older Chrome versions or errors: open as popup
+      chrome.windows.create({
+        url: chrome.runtime.getURL('popup.html'), // Assuming popup.html is your popup file
+        type: 'popup',
+        width: 400,
+        height: 600
+      });
+    });
+  } else {
+    Logger.error("chrome.action.onClicked: tab.id is undefined.");
+    // Fallback: open as popup
+    chrome.windows.create({
+      url: chrome.runtime.getURL('popup.html'),
+      type: 'popup',
+      width: 400,
+      height: 600
+    });
   }
+});
+
+
+// --- Authentication Management (Simplified to just storage, no external auth) ---
+// Not using firebase auth as per discussion, just storage for isLoggedIn state.
+const getAuthState = () => {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['isLoggedIn'], function(result) { // Removed authToken, userId
+      if (chrome.runtime.lastError) {
+        Logger.error('Error accessing storage for auth state:', chrome.runtime.lastError);
+        resolve({ isLoggedIn: false });
+        return;
+      }
+      resolve({
+        isLoggedIn: !!result.isLoggedIn,
+      });
+    });
+  });
 };
 
-// Run auth validation periodically
-setInterval(validateAuthToken, 60 * 60 * 1000); // Check once per hour
+// Check auth state when extension starts (for logging/internal state)
+chrome.runtime.onStartup.addListener(async function() {
+  try {
+    const authState = await getAuthState();
+    Logger.log('Extension started, initial auth state:', authState);
+  } catch (error) {
+    Logger.error('Error checking auth state on startup:', error);
+  }
+});
 
 // Listen for extension installation or update
 chrome.runtime.onInstalled.addListener(function(details) {
   Logger.log('Extension installed or updated', { reason: details.reason });
-  
-  // Check auth state after installation/update
-  validateAuthToken();
+  // Set default isLoggedIn state to false on install if not already set
+  chrome.storage.local.get('isLoggedIn', (result) => {
+      if (typeof result.isLoggedIn === 'undefined') {
+          chrome.storage.local.set({ isLoggedIn: false });
+          Logger.log('Default isLoggedIn state set to false on install.');
+      }
+  });
 });
 
-// Log when the background script loads
+
+// --- Initialization Log ---
 Logger.log('Background script initialized', {
   apiBaseUrl: API_BASE_URL,
   endpoints: API_ENDPOINTS,

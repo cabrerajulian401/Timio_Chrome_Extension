@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
-import { app } from './firebase.js';
-// import { getAuth, signOut } from 'firebase/auth/web-extension'; // Removed for no-auth version
+import { app } from './firebase.js'; // Assuming firebase is still used elsewhere
 import Lottie from 'react-lottie';
 import torchAnimationData from '../../assets/animations/torch.json';
 import pivotAnimationData from '../../assets/animations/pivot.json';
@@ -12,13 +11,15 @@ const Main = ({ setIsAuthenticated }) => {
   const [showToolTip, setShowToolTip] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
   const history = useHistory();
-  // const auth = getAuth(); // Removed for no-auth version
+
+  // State to manage the floating menu visibility
+  const [isFloatingMenuVisible, setIsFloatingMenuVisible] = useState(true);
 
   // Use refs to safely reference animations
   const torchAnimationRef = useRef(null);
   const pivotAnimationRef = useRef(null);
 
-  // Lottie animation options
+  // Lottie animation options (remain the same)
   const torchOptions = {
     loop: true,
     autoplay: true,
@@ -38,9 +39,16 @@ const Main = ({ setIsAuthenticated }) => {
   };
 
   useEffect(() => {
-    // Set mounted flag to true
     setIsMounted(true);
-    
+
+    // Load floating menu visibility setting from chrome.storage.local
+    if (chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(['isFloatingMenuVisible'], (result) => {
+        const storedVisibility = typeof result.isFloatingMenuVisible !== 'undefined' ? result.isFloatingMenuVisible : true;
+        setIsFloatingMenuVisible(storedVisibility);
+      });
+    }
+
     // Show tooltip on first visit
     try {
       const hasSeenTooltip = localStorage.getItem('hasSeenTooltip');
@@ -56,10 +64,38 @@ const Main = ({ setIsAuthenticated }) => {
     return () => {
       setIsMounted(false);
     };
-  }, []);
+  }, [isMounted]); // Dependency array includes isMounted
 
-  // Logout function removed - no authentication needed
+  // Function to toggle floating menu visibility
+  const toggleFloatingMenuVisibility = () => {
+    const newVisibility = !isFloatingMenuVisible;
+    setIsFloatingMenuVisible(newVisibility);
 
+    // Save the setting to chrome.storage.local
+    if (chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ isFloatingMenuVisible: newVisibility }, () => {
+        console.log('Floating menu visibility saved to storage:', newVisibility);
+      });
+    }
+
+    // Send a message to the content script in the active tab
+    if (chrome.tabs && chrome.runtime) {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0] && tabs[0].id) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            type: 'TOGGLE_FLOATING_MENU',
+            isVisible: newVisibility,
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn("Error sending message to content script:", chrome.runtime.lastError.message);
+            } else {
+              console.log('Message sent to content script:', response);
+            }
+          });
+        }
+      });
+    }
+  };
 
   return (
     <div className="extension-container">
@@ -67,7 +103,19 @@ const Main = ({ setIsAuthenticated }) => {
       <header className="extension-header">
         <h1 className="logo">TIMIO</h1>
         <div className="header-buttons">
-          {/* Logout button removed - no authentication */}
+          {/* Label for the sliding toggle button */}
+          <label className="toggle-label" htmlFor="floating-menu-toggle">
+            Floating Menu:
+            <label className="switch">
+              <input
+                type="checkbox"
+                id="floating-menu-toggle"
+                checked={isFloatingMenuVisible}
+                onChange={toggleFloatingMenuVisibility}
+              />
+              <span className="slider round"></span>
+            </label>
+          </label>
         </div>
       </header>
 
@@ -123,7 +171,7 @@ const Main = ({ setIsAuthenticated }) => {
               <span>
                 👋 First time? Try clicking the + icon on any news website to start analyzing with TIMIO's tools!
               </span>
-              
+
               <button
                 className="tooltip-close"
                 onClick={() => setShowToolTip(false)}
@@ -137,31 +185,31 @@ const Main = ({ setIsAuthenticated }) => {
         {/* Individual Tool Showcase */}
         <div className="tools-showcase">
           <h3 className="tools-title">Our Analysis Tools</h3>
-          
+
           <div className="animation-showcase">
             {/* Torch Tool with Animation */}
             <div className="animation-item torch">
               {isMounted && (
-                <Lottie 
-                options={{
-                  ...torchOptions,
-                  rendererSettings: {
-                    preserveAspectRatio: 'xMidYMid meet' // Change to 'meet' instead of 'slice'
-                  }
-                }}
-                height={120} // Try a larger height
-                width={100}  // Keep width proportional
-                isClickToPauseDisabled={true} // Prevent accidental pausing
-                isStopped={false}
-                isPaused={false}
-                ref={torchAnimationRef}
-              />
+                <Lottie
+                  options={{
+                    ...torchOptions,
+                    rendererSettings: {
+                      preserveAspectRatio: 'xMidYMid meet'
+                    }
+                  }}
+                  height={120}
+                  width={100}
+                  isClickToPauseDisabled={true}
+                  isStopped={false}
+                  isPaused={false}
+                  ref={torchAnimationRef}
+                />
               )}
               <span className="tool-name">Torch</span>
               <p className="tool-description">
                 Shine a light on media bias and credibility issues in any news article
               </p>
-              
+
               <div className="tool-details">
                 <div className="tool-detail-item">
                   <svg className="detail-icon" viewBox="0 0 24 24">
@@ -183,14 +231,14 @@ const Main = ({ setIsAuthenticated }) => {
                 </div>
               </div>
             </div>
-            
+
             {/* Pivot Tool with Animation */}
             <div className="animation-item pivot">
               {isMounted && (
-                <Lottie 
-                  options={pivotOptions} 
-                  height={80} 
-                  width={80} 
+                <Lottie
+                  options={pivotOptions}
+                  height={80}
+                  width={80}
                   isStopped={false}
                   isPaused={false}
                   ref={pivotAnimationRef}
@@ -200,7 +248,7 @@ const Main = ({ setIsAuthenticated }) => {
               <p className="tool-description">
                 Discover alternative perspectives and broaden your understanding
               </p>
-              
+
               <div className="tool-details">
                 <div className="tool-detail-item">
                   <svg className="detail-icon" viewBox="0 0 24 24">
