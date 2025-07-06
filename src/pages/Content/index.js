@@ -7,7 +7,9 @@ console.log('Content script loaded');
 
 (() => {
     let timioFloatingMenu = null;
+    let timioModal = null;
     let isExtensionContextValid = true;
+    let loadingSequenceCleanup = null;
 
     // Enhanced error logging utility
     function logError(message, error = null, context = {}) {
@@ -57,7 +59,6 @@ console.log('Content script loaded');
                 isExtensionContextValid = false;
                 return false;
             }
-            // Try to access runtime URL as a test
             chrome.runtime.getURL('test');
             return true;
         } catch (error) {
@@ -80,6 +81,7 @@ console.log('Content script loaded');
                     if (chrome.runtime.lastError.message.includes('Extension context invalidated')) {
                         isExtensionContextValid = false;
                         logError('Extension context invalidated during message send', new Error(chrome.runtime.lastError.message));
+                        handleExtensionReload();
                     } else {
                         logError('Chrome runtime error', new Error(chrome.runtime.lastError.message), { message });
                     }
@@ -134,6 +136,678 @@ console.log('Content script loaded');
         return true;
     }
 
+    function handleExtensionReload() {
+        if (!timioModal) return;
+
+        const spinner = timioModal.querySelector('.timio-spinner');
+        const content = timioModal.querySelector('.timio-insights-content');
+        const pivotContent = timioModal.querySelector('.timio-pivot-content');
+
+        if (spinner) spinner.style.display = 'none';
+
+        const errorContainer = content || pivotContent;
+        if (errorContainer) {
+            errorContainer.style.display = 'block';
+            errorContainer.innerHTML = `
+                <div class="timio-error-message">
+                    <svg class="timio-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <p class="timio-error-title">Extension Updated</p>
+                    <p class="timio-error-text">Please refresh the page to continue using the extension.</p>
+                    <button class="timio-refresh-button" onclick="window.location.reload()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.57L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                        </svg>
+                        Refresh Page
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    function formatInsights(insights) {
+        if (!insights) return '<p>No insights available</p>';
+
+        let insightContent = insights;
+        if (typeof insights === 'object' && insights.article_insight) {
+            insightContent = insights.article_insight;
+        }
+
+        // Clean up the content
+        insightContent = insightContent
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\')
+            .replace(/\\'/g, "'")
+            .trim();
+
+        const sections = insightContent
+            .split(/\n\s*\n/)
+            .filter(section => section.trim().length > 0)
+            .map(section => section.trim());
+
+        if (sections.length === 0) {
+            return '<p>No structured insights available</p>';
+        }
+
+        return `
+            <div style="padding: 16px;">
+                ${sections
+                    .map((section) => {
+                        const lines = section.split('\n').filter(line => line.trim());
+                        if (lines.length === 0) return '';
+
+                        const title = lines[0].replace(/^\*\*|\*\*$/g, '').replace(/^#+\s*/, '').trim();
+                        const points = lines.slice(1).filter(line => line.trim());
+
+                        return `
+                            <div class="timio-insight-section">
+                                <h3 class="timio-insight-title">${title}</h3>
+                                <ul class="timio-insight-list">
+                                    ${points
+                                        .map(point => {
+                                            const cleanPoint = point
+                                                .replace(/^[•\-\*]\s*/, '')
+                                                .replace(/^\d+\.\s*/, '')
+                                                .replace(/^\s*[\-\*]\s*/, '')
+                                                .trim();
+                                            
+                                            if (cleanPoint.length === 0) return '';
+                                            
+                                            return `
+                                                <li class="timio-insight-item">
+                                                    ${cleanPoint}
+                                                </li>
+                                            `;
+                                        })
+                                        .filter(item => item.trim().length > 0)
+                                        .join('')}
+                                </ul>
+                            </div>
+                        `;
+                    })
+                    .filter(section => section.trim().length > 0)
+                    .join('')}
+            </div>
+            <div style="text-align: center;">
+                <button class="timio-copy-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy Analysis
+                </button>
+            </div>
+        `;
+    }
+
+    function formatPivotArticles(articles) {
+        console.log('Received articles:', articles);
+
+        if (!articles || articles.length === 0) {
+            return `
+                <div class="timio-error-message">
+                    <svg class="timio-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <p class="timio-error-title">No Results Found</p>
+                    <p class="timio-error-text">Unable to find related articles. Please try a different article.</p>
+                </div>
+            `;
+        }
+
+        const formatDate = (dateString) => {
+            if (!dateString) return 'Recent';
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return 'Recent';
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                });
+            } catch (e) {
+                console.warn('Error formatting date:', e);
+                return 'Recent';
+            }
+        };
+
+        const getDomain = (url) => {
+            try {
+                return new URL(url).hostname.replace('www.', '');
+            } catch (e) {
+                console.warn('Error parsing URL:', e);
+                return 'Unknown source';
+            }
+        };
+
+        const truncateText = (text, maxLength = 150) => {
+            if (!text) return 'No description available';
+            text = text.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '');
+            return text.length > maxLength ? 
+                text.substring(0, maxLength).trim() + '...' : 
+                text;
+        };
+
+        const articlesHTML = articles
+            .map((article, index) => {
+                console.log(`Processing article ${index + 1}:`, article);
+
+                if (!article.url) {
+                    console.warn('Article missing URL:', article);
+                    return '';
+                }
+
+                const domain = article.source?.domain || getDomain(article.url);
+                const description = article.description || article.summary || 'No description available';
+                const date = formatDate(article.pubDate);
+                const imageUrl = article.imageUrl || '';
+                const title = article.title || 'Untitled';
+                const authorsByline = article.authorsByline
+                    ? article.authorsByline.split(',')[0]
+                    : '';
+
+                return `
+                    <a href="${article.url}"
+                        class="timio-pivot-article"
+                        target="_blank"
+                        rel="noopener noreferrer">
+                        ${imageUrl ? `
+                            <div class="timio-pivot-image">
+                                <div class="timio-image-placeholder"></div>
+                                <img src="${imageUrl}"
+                                    alt="${title}"
+                                    onload="this.previousElementSibling.style.display='none'"
+                                    onerror="this.previousElementSibling.style.display='block';this.style.display='none'"
+                                    loading="lazy">
+                            </div>
+                        ` : `
+                            <div class="timio-pivot-image">
+                                <div class="timio-image-placeholder"></div>
+                            </div>
+                        `}
+
+                        <div class="timio-pivot-text">
+                            <h3 class="timio-pivot-title">${title}</h3>
+                            <p class="timio-pivot-description">${truncateText(description)}</p>
+                            <div class="timio-pivot-meta">
+                                <span class="timio-pivot-source">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M21 2H3v16h5v4l4-4h5l4-4V2z"></path>
+                                    </svg>
+                                    ${domain}
+                                </span>
+                                <span class="timio-pivot-date">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M12 6v6l4 2"></path>
+                                    </svg>
+                                    ${date}
+                                </span>
+                                ${
+                                    authorsByline
+                                        ? `<span class="timio-pivot-author">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
+                                            </svg>
+                                            ${authorsByline}
+                                        </span>`
+                                        : ''
+                                }
+                            </div>
+                        </div>
+                    </a>
+                `;
+            })
+            .join('');
+
+        return `
+            <div class="timio-pivot-container">
+                ${articlesHTML}
+            </div>
+        `;
+    }
+
+    function addCopyButtonListener() {
+        const copyButton = document.querySelector('.timio-copy-button');
+        if (!copyButton) return;
+
+        copyButton.addEventListener('click', async () => {
+            const insightsContent = document.querySelector('.timio-insights-content');
+            const textToCopy = insightsContent.textContent.trim();
+
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                copyButton.classList.add('copied');
+                copyButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Copied!
+                `;
+
+                setTimeout(() => {
+                    copyButton.classList.remove('copied');
+                    copyButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copy Analysis
+                    `;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text:', err);
+            }
+        });
+    }
+
+    function createModal() {
+        if (timioModal) {
+            return timioModal;
+        }
+
+        timioModal = document.createElement('div');
+        timioModal.id = 'timio-modal';
+        timioModal.className = 'timio-modal';
+        
+        timioModal.innerHTML = `
+            <div class="timio-modal-content">
+                <div class="timio-modal-header">
+                    <h2 class="timio-modal-title">
+                        <span class="timio-title-text">Torch's Insights</span>
+                    </h2>
+                    <button class="timio-modal-close">×</button>
+                </div>
+                <div class="timio-modal-body">
+                    <div class="timio-spinner">
+                        <div id="animation-container" class="timio-lottie-container"></div>
+                        <p style="margin-top: 16px; color: #9ca3af;">Analyzing article...</p>
+                    </div>
+                    <div class="timio-insights-content" style="display: none;"></div>
+                    <div class="timio-pivot-content" style="display: none;"></div>
+                </div>
+                <div class="timio-modal-footer">
+                    <div class="timio-footer-content">
+                        <a href="https://timio.news" class="timio-brand-link" target="_blank">
+                            Powered by TIMIO
+                        </a>
+                        <div class="timio-footer-links">
+                            <a href="https://timio.news/support" class="timio-support-link" target="_blank">Support</a>
+                            <span class="timio-divider">•</span>
+                            <a href="https://timio.news/privacy" class="timio-privacy-link" target="_blank">Privacy</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(timioModal);
+
+        // Add close button listener
+        const closeButton = timioModal.querySelector('.timio-modal-close');
+        closeButton.addEventListener('click', () => {
+            closeModal();
+        });
+
+        // Close on outside click
+        timioModal.addEventListener('click', (e) => {
+            if (e.target === timioModal) {
+                closeModal();
+            }
+        });
+
+        return timioModal;
+    }
+
+    function openModal() {
+        if (!timioModal) {
+            createModal();
+        }
+        timioModal.classList.add('active');
+    }
+
+    function closeModal() {
+        if (timioModal) {
+            timioModal.classList.remove('active');
+            if (loadingSequenceCleanup) {
+                loadingSequenceCleanup();
+                loadingSequenceCleanup = null;
+            }
+        }
+    }
+
+    function startLoadingSequence(type) {
+        const spinner = timioModal.querySelector('.timio-spinner');
+        const progressBar = spinner.querySelector('.timio-progress-bar');
+        const statusText = spinner.querySelector('.timio-status-text');
+
+        const sequences = {
+            torch: [
+                { message: 'Scanning article...', progress: 15, duration: 1500 },
+                { message: 'Analyzing content structure...', progress: 30, duration: 2000 },
+                { message: 'Extracting key arguments...', progress: 45, duration: 2500 },
+                { message: 'Evaluating evidence quality...', progress: 60, duration: 2000 },
+                { message: 'Finding supporting references...', progress: 70, duration: 1800 },
+                { message: 'Identifying main claims...', progress: 80, duration: 1500 },
+                { message: 'Generating comprehensive insights...', progress: 90, duration: 3000 },
+                { message: 'Finalizing analysis...', progress: 95, duration: 1500 },
+            ],
+            pivot: [
+                { message: 'Scanning current article...', progress: 15, duration: 1500 },
+                { message: 'Identifying key topics...', progress: 30, duration: 2000 },
+                { message: 'Finding diverse viewpoints...', progress: 45, duration: 2200 },
+                { message: 'Searching across publications...', progress: 60, duration: 2500 },
+                { message: 'Filtering for relevance...', progress: 70, duration: 1800 },
+                { message: 'Evaluating information quality...', progress: 80, duration: 2000 },
+                { message: 'Finding trusted sources...', progress: 85, duration: 1500 },
+                { message: 'Preparing alternative perspectives...', progress: 90, duration: 2000 },
+                { message: 'Organizing recommendations...', progress: 95, duration: 1500 },
+            ],
+        };
+
+        const steps = sequences[type];
+        let currentStep = 0;
+
+        let stuckTimeout = null;
+        let waitInterval = null;
+
+        if (loadingSequenceCleanup) {
+            loadingSequenceCleanup();
+        }
+
+        stuckTimeout = setTimeout(() => {
+            if (statusText) statusText.textContent = 'Almost there...';
+            const stuckContainer = spinner.querySelector('.timio-stuck-container');
+            if (stuckContainer) {
+                stuckContainer.style.display = 'block';
+            }
+        }, 60000);
+
+        function updateStep() {
+            if (!progressBar || !statusText || currentStep >= steps.length) {
+                return;
+            }
+
+            const step = steps[currentStep];
+            progressBar.style.width = `${step.progress}%`;
+            statusText.textContent = step.message;
+
+            currentStep++;
+
+            if (currentStep < steps.length) {
+                setTimeout(updateStep, step.duration);
+            } else {
+                setTimeout(() => {
+                    let waitingIndex = 0;
+                    const waitingMessages = ['Almost there...', 'Finalizing results...'];
+
+                    waitInterval = setInterval(() => {
+                        if (statusText) {
+                            statusText.textContent = waitingMessages[waitingIndex];
+                            waitingIndex = (waitingIndex + 1) % waitingMessages.length;
+                        } else {
+                            clearInterval(waitInterval);
+                        }
+                    }, 5000);
+                }, 1000);
+            }
+        }
+
+        updateStep();
+
+        loadingSequenceCleanup = () => {
+            if (stuckTimeout) {
+                clearTimeout(stuckTimeout);
+                stuckTimeout = null;
+            }
+            if (waitInterval) {
+                clearInterval(waitInterval);
+                waitInterval = null;
+            }
+            const stuckContainer = spinner.querySelector('.timio-stuck-container');
+            if (stuckContainer) {
+                stuckContainer.style.display = 'none';
+            }
+        };
+        return loadingSequenceCleanup;
+    }
+
+    // Load Lottie library if not available
+    function loadLottieLibrary() {
+        return new Promise((resolve, reject) => {
+            if (typeof lottie !== 'undefined') {
+                resolve();
+                return;
+            }
+
+            console.log('Loading Lottie library...');
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js';
+            script.onload = () => {
+                console.log('Lottie library loaded successfully');
+                resolve();
+            };
+            script.onerror = () => {
+                console.error('Failed to load Lottie library');
+                reject(new Error('Failed to load Lottie library'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    function showLoadingInModal(title, animationType) {
+        openModal();
+        
+        const modalTitle = timioModal.querySelector('.timio-modal-title');
+        const spinner = timioModal.querySelector('.timio-spinner');
+        const content = timioModal.querySelector('.timio-insights-content');
+        const pivotContent = timioModal.querySelector('.timio-pivot-content');
+
+        // Update title with icon
+        const iconUrl = animationType === 'torch' 
+            ? chrome.runtime.getURL('Torch_Icon.png')
+            : chrome.runtime.getURL('Pivot_Icon.png');
+        
+        modalTitle.innerHTML = `
+            <img src="${iconUrl}" alt="${animationType}" class="timio-title-icon">
+            <span class="timio-title-text">${title}</span>
+        `;
+
+        // Create unique container for animation
+        const containerId = `lottie-container-${Date.now()}`;
+
+        spinner.innerHTML = `
+            <div class="timio-loading-container">
+                <div class="timio-loading-header">
+                    <h3 class="timio-loading-title">${
+                        animationType === 'torch'
+                            ? 'Analyzing Article'
+                            : 'Finding Related Articles'
+                    }</h3>
+                </div>
+                
+                <div class="timio-animation-wrapper">
+                    <div id="${containerId}" class="timio-lottie-container">
+                        <!-- Fallback will be removed when Lottie loads -->
+                    </div>
+                </div>
+
+                <div class="timio-progress-section">
+                    <div class="timio-progress">
+                        <div class="timio-progress-bar" style="width: 0%;"></div>
+                    </div>
+                    <p class="timio-status-text">
+                        ${
+                            animationType === 'torch'
+                                ? 'Scanning article...'
+                                : 'Finding related articles...'
+                        }
+                    </p>
+                </div>
+
+                <div class="timio-stuck-container" style="display: none;">
+                    <div class="timio-stuck-content">
+                        <div class="timio-stuck-icon">⏰</div>
+                        <p>Taking longer than expected?</p>
+                        <div class="timio-stuck-actions">
+                            <button class="timio-refresh-button" type="button">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.57L21 8"></path>
+                                    <path d="M21 3v5h-5"></path>
+                                </svg>
+                                Try Again
+                            </button>
+                            <a href="https://timio.news/support" class="timio-help-link" target="_blank">
+                                Get Help
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        spinner.style.display = 'flex';
+        content.style.display = 'none';
+        pivotContent.style.display = 'none';
+
+        // Add refresh button listener
+        const refreshButton = spinner.querySelector('.timio-refresh-button');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
+
+        // Load Lottie library first, then try to load animation
+        loadLottieLibrary()
+            .then(() => {
+                const animationContainer = document.getElementById(containerId);
+                if (animationContainer) {
+                    // Add initial loading spinner
+                    animationContainer.innerHTML = '<div class="timio-spinner-fallback"></div>';
+                    
+                    try {
+                        console.log('Attempting to load Lottie animation...');
+                        console.log('Lottie available:', typeof lottie !== 'undefined');
+                        
+                        if (typeof lottie !== 'undefined') {
+                            const animationPath = chrome.runtime.getURL(`assets/animations/${animationType}.json`);
+                            console.log('Animation path:', animationPath);
+                            
+                            // Test if the file exists by fetching it first
+                            fetch(animationPath)
+                                .then(response => {
+                                    console.log('Animation file fetch response:', response.status);
+                                    if (response.ok) {
+                                        return response.json();
+                                    } else {
+                                        throw new Error(`Failed to fetch animation: ${response.status}`);
+                                    }
+                                })
+                                .then(animationData => {
+                                    console.log('Animation data loaded, creating Lottie animation...');
+                                    // Clear any fallback content
+                                    animationContainer.innerHTML = '';
+                                    
+                                    lottie.loadAnimation({
+                                        container: animationContainer,
+                                        renderer: 'svg',
+                                        loop: true,
+                                        autoplay: true,
+                                        animationData: animationData,
+                                        onComplete: () => {
+                                            console.log(`${animationType} animation loaded successfully`);
+                                        },
+                                        onError: (error) => {
+                                            console.error(`${animationType} animation error:`, error);
+                                            animationContainer.innerHTML = `<div class="timio-spinner-fallback"></div>`;
+                                        }
+                                    });
+                                })
+                                .catch(error => {
+                                    console.error('Failed to load animation file:', error);
+                                    console.log('Falling back to spinner...');
+                                    animationContainer.innerHTML = `<div class="timio-spinner-fallback"></div>`;
+                                });
+                        } else {
+                            console.warn('Lottie library still not available after loading attempt');
+                            animationContainer.innerHTML = `<div class="timio-spinner-fallback"></div>`;
+                        }
+                    } catch (error) {
+                        console.error('Animation setup failed:', error);
+                        animationContainer.innerHTML = `<div class="timio-spinner-fallback"></div>`;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Failed to load Lottie library:', error);
+                const animationContainer = document.getElementById(containerId);
+                if (animationContainer) {
+                    animationContainer.innerHTML = `<div class="timio-spinner-fallback"></div>`;
+                }
+            });
+
+        // Start the loading sequence
+        loadingSequenceCleanup = startLoadingSequence(animationType);
+    }
+
+    function showResultsInModal(results) {
+        if (loadingSequenceCleanup) {
+            loadingSequenceCleanup();
+            loadingSequenceCleanup = null;
+        }
+
+        const spinner = timioModal.querySelector('.timio-spinner');
+        const content = timioModal.querySelector('.timio-insights-content');
+        const pivotContent = timioModal.querySelector('.timio-pivot-content');
+
+        spinner.style.display = 'none';
+
+        if (results.insights) {
+            pivotContent.style.display = 'none';
+            content.style.display = 'block';
+            content.innerHTML = formatInsights(results.insights);
+            setTimeout(() => {
+                addCopyButtonListener();
+            }, 100);
+        } else if (results.articles) {
+            content.style.display = 'none';
+            pivotContent.style.display = 'block';
+            pivotContent.innerHTML = formatPivotArticles(results.articles);
+        } else if (results.error) {
+            const errorContainer = (pivotContent && pivotContent.style.display === 'block') ? pivotContent : content;
+            const otherContainer = (errorContainer === content) ? pivotContent : content;
+
+            if (otherContainer) otherContainer.style.display = 'none';
+            if (errorContainer) {
+                errorContainer.style.display = 'block';
+                errorContainer.innerHTML = `
+                    <div class="timio-error-message">
+                        <svg class="timio-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <p class="timio-error-title">Error</p>
+                        <p class="timio-error-text">${results.error}</p>
+                        <button class="timio-refresh-button" onclick="window.location.reload()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.57L21 8"></path>
+                                <path d="M21 3v5h-5"></path>
+                            </svg>
+                            Refresh Page
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // FULLSCREEN HANDLERS
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
@@ -147,6 +821,7 @@ console.log('Content script loaded');
                 document.mozFullScreenElement ||
                 document.msFullscreenElement) {
                 if (menu) menu.style.display = 'none';
+                closeModal();
             } else {
                 if (shouldInjectTIMIO()) {
                     if (checkExtensionContext()) {
@@ -185,15 +860,22 @@ console.log('Content script loaded');
         }
     }
 
-    // Safe message listener setup
+    // MESSAGE LISTENER SETUP
     if (checkExtensionContext() && chrome.runtime && chrome.runtime.onMessage) {
         try {
             chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 try {
                     logInfo('Content script received message:', request);
+                    
                     if (request.type === 'TOGGLE_FLOATING_MENU') {
                         applyFloatingMenuVisibility(request.isVisible);
                         sendResponse({ status: 'success' });
+                    } else if (request.type === 'SHOW_LOADING') {
+                        showLoadingInModal(request.title, request.animationType);
+                        sendResponse({ status: 'loading displayed' });
+                    } else if (request.type === 'SHOW_RESULTS') {
+                        showResultsInModal(request);
+                        sendResponse({ status: 'results displayed' });
                     }
                 } catch (error) {
                     logError('Error in message listener', error, { request });
@@ -206,7 +888,7 @@ console.log('Content script loaded');
         }
     }
 
-    // Safe storage change listener setup
+    // STORAGE CHANGE LISTENER SETUP
     if (checkExtensionContext() && chrome.storage && chrome.storage.onChanged) {
         try {
             chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -256,10 +938,13 @@ console.log('Content script loaded');
                     return;
                 }
 
+                // Show loading immediately in modal
+                showLoadingInModal(title, animationType);
+
                 const articleText = extractArticleText();
                 logInfo('Extracted article text for sending:', articleText.slice(0, 200));
 
-                // 🔥 FIXED: Send message with user gesture context preserved
+                // Send message to background for processing
                 const success = safeChromeSend({
                     type: 'PROCESS_ARTICLE',
                     action: action,
@@ -267,14 +952,18 @@ console.log('Content script loaded');
                     animationType: animationType,
                     content: articleText,
                     url: window.location.href,
-                    userGesture: true // Flag to indicate this is from user gesture
+                    userGesture: true,
+                    useContentScript: true
                 }, (response) => {
                     logInfo('Response from background:', response);
+                    if (response && response.error) {
+                        showResultsInModal({ error: response.error });
+                    }
                 });
 
                 if (!success) {
                     logError('Failed to send message to background - extension context may be invalid');
-                    alert('Extension error. Please refresh the page and try again.');
+                    showResultsInModal({ error: 'Extension error. Please refresh the page and try again.' });
                 }
 
             } catch (error) {
@@ -284,11 +973,7 @@ console.log('Content script loaded');
                     animationType,
                 });
                 
-                // Try to send error to background
-                safeChromeSend({
-                    type: 'PROCESS_ARTICLE_ERROR',
-                    error: `Failed to process article: ${error.message}`
-                });
+                showResultsInModal({ error: `Failed to process article: ${error.message}` });
             }
         };
     }
@@ -301,15 +986,10 @@ console.log('Content script loaded');
             let startTime = 0;
 
             const dragHandle = element.querySelector('.timio-menu-button');
-            const dragIndicator = element.querySelector('.timio-drag-indicator');
 
             if (dragHandle) {
                 dragHandle.addEventListener('mousedown', dragMouseDown);
                 dragHandle.addEventListener('touchstart', dragTouchStart, { passive: false });
-            }
-            if (dragIndicator) {
-                dragIndicator.addEventListener('mousedown', dragMouseDown);
-                dragIndicator.addEventListener('touchstart', dragTouchStart, { passive: false });
             }
 
             function dragMouseDown(e) {
@@ -562,7 +1242,6 @@ console.log('Content script loaded');
             
             timioFloatingMenu.innerHTML = `
                 <div class="timio-menu-container">
-                    <div class="timio-drag-indicator"></div>
                     <div class="timio-menu-items">
                         <button class="timio-action-button" id="timio-insights">
                             <div class="button-image">
@@ -793,5 +1472,12 @@ console.log('Content script loaded');
             logError('Extension context invalidated on startup', error);
         }
     }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (loadingSequenceCleanup) {
+            loadingSequenceCleanup();
+        }
+    });
 
 })();

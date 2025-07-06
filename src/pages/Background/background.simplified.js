@@ -333,10 +333,32 @@ async function sendToSidePanel(message, targetTabId = null) {
     }
 }
 
+// --- Helper to send message to Content Script with error handling ---
+async function sendToContentScript(message, targetTabId) {
+    try {
+        if (!targetTabId) {
+            Logger.warn('Background: No valid tab ID to send message to content script. Message dropped.', message);
+            return;
+        }
+
+        chrome.tabs.sendMessage(targetTabId, message, (response) => {
+            if (chrome.runtime.lastError) {
+                Logger.warn(`Background: Error sending message to content script (tab ${targetTabId}):`, chrome.runtime.lastError.message);
+            } else {
+                Logger.log(`Background: Content script (tab ${targetTabId}) acknowledged message:`, response);
+            }
+        });
+    } catch (error) {
+        Logger.error('Background: Unexpected error in sendToContentScript helper:', error);
+    }
+}
+
 // --- Chrome Runtime Communication Handlers ---
 
 // Handle messages from the popup/content script (e.g., from floating menu)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    Logger.log('Received message:', { type: request.type, action: request.action, useContentScript: request.useContentScript });
+
     // Handle authentication state changes from popup (if authentication is still desired)
     if (request.type === 'AUTH_STATE_CHANGED') {
         Logger.log('Auth state changed from popup:', { isLoggedIn: request.isLoggedIn });
@@ -360,8 +382,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return;
         }
 
-        // 🔥 FIXED: Open side panel synchronously if user gesture is present
-        if (request.userGesture) {
+        // Determine if we should use content script UI or traditional side panel
+        const useContentScript = request.useContentScript;
+
+        // 🔥 FIXED: Open side panel synchronously if user gesture is present and not using content script
+        if (request.userGesture && !useContentScript) {
             try {
                 // Enable and open side panel immediately in the same call stack
                 chrome.sidePanel.setOptions({
@@ -381,7 +406,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Process article asynchronously
         (async () => {
             try {
-                Logger.log(`Processing PROCESS_ARTICLE request: "${request.title}"`);
+                Logger.log(`Processing PROCESS_ARTICLE request: "${request.title}" (useContentScript: ${useContentScript})`);
 
                 const articleUrl = request.url;
                 const extractedArticleContent = request.content;
@@ -393,15 +418,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     throw new Error("No article content provided by content script for analysis.");
                 }
 
-                // Small delay to ensure side panel is ready
+                // Small delay to ensure UI is ready
                 await new Promise(resolve => setTimeout(resolve, 200));
 
-                // Send loading state to the side panel
-                await sendToSidePanel({
+                // Send loading state to appropriate UI
+                const loadingMessage = {
                     type: 'SHOW_LOADING',
                     title: request.title || 'Processing...',
                     animationType: request.animationType
-                }, currentTabId);
+                };
+
+                if (useContentScript) {
+                    await sendToContentScript(loadingMessage, currentTabId);
+                } else {
+                    await sendToSidePanel(loadingMessage, currentTabId);
+                }
 
                 let finalResult;
                 let responseType;
@@ -422,22 +453,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     throw new Error(`Unknown action received: ${request.action}`);
                 }
 
-                // Send results back to the side panel
-                await sendToSidePanel({
+                // Send results back to appropriate UI
+                const resultsMessage = {
                     type: 'SHOW_RESULTS',
                     [responseType]: finalResult
-                }, currentTabId);
+                };
 
-                Logger.log(`${request.action} completed successfully`);
+                if (useContentScript) {
+                    await sendToContentScript(resultsMessage, currentTabId);
+                } else {
+                    await sendToSidePanel(resultsMessage, currentTabId);
+                }
+
+                Logger.log(`${request.action} completed successfully (sent to ${useContentScript ? 'content script' : 'side panel'})`);
 
             } catch (error) {
                 Logger.error(`PROCESS_ARTICLE failed for ${request.action}:`, error);
                 const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
                 
-                await sendToSidePanel({
+                const errorMsg = {
                     type: 'SHOW_RESULTS',
                     error: `Failed to get data: ${errorMessage}`
-                }, currentTabId);
+                };
+
+                if (useContentScript) {
+                    await sendToContentScript(errorMsg, currentTabId);
+                } else {
+                    await sendToSidePanel(errorMsg, currentTabId);
+                }
             }
         })();
 
@@ -508,9 +551,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
+
+    // Handle floating menu visibility toggle
+    if (request.type === 'TOGGLE_FLOATING_MENU') {
+        if (sender.tab?.id) {
+            sendToContentScript({
+                type: 'TOGGLE_FLOATING_MENU',
+                isVisible: request.isVisible
+            }, sender.tab.id);
+            sendResponse({ success: true });
+        } else {
+            sendResponse({ success: false, error: 'No active tab found' });
+        }
+        return true;
+    }
+
+    // Default response for unknown message types
+    sendResponse({ success: false, error: 'Unknown message type' });
 });
 
-// --- Port-based Communication (from content script - consider removing if not used) ---
+// --- Port-based Communication (from content script - legacy support) ---
 chrome.runtime.onConnect.addListener((port) => {
     if (port.name !== 'timio-extension') {
         Logger.log('Rejected connection with unexpected port name:', port.name);
@@ -565,9 +625,6 @@ chrome.runtime.onConnect.addListener((port) => {
         Logger.log('Port disconnected:', port.name);
     });
 });
-
-// --- Side Panel Setup (No action listener needed with popup) ---
-// The popup handles side panel opening via messages
 
 // --- Authentication Management ---
 const getAuthState = () => {

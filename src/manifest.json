@@ -23,10 +23,9 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "lottie.min.js",        
-        "lottie-manager.js",   
-        "content.bundle.js",    
-        "Readability.js" 
+        "lottie.min.js",
+        "Readability.js",
+        "content.bundle.js"
       ],
       "css": ["content.styles.css"], 
       "run_at": "document_end"
@@ -45,12 +44,15 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "lottie.min.js",
         "assets/animations/torch.json",
         "assets/animations/pivot.json",
         "Torch_Icon.png",    
         "Pivot_Icon.png",    
         "summarize-icon.png", 
-        "content.styles.css"
+        "content.styles.css",
+        "sidepanel.html",
+        "popup.html"
       ],
       "matches": ["<all_urls>"]
     }
