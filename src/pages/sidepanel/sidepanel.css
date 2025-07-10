@@ -7,7 +7,8 @@
     padding: 0;
 }
 
-html, body {
+html,
+body {
     height: 100%;
     overflow: hidden;
     background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
@@ -94,8 +95,15 @@ html, body {
 }
 
 @keyframes shimmerHeader {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 1; }
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
 }
 
 .timio-header-content {
@@ -125,12 +133,15 @@ html, body {
 }
 
 @keyframes logoPulse {
-    0%, 100% { 
-        transform: scale(1); 
+
+    0%,
+    100% {
+        transform: scale(1);
         filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
     }
-    50% { 
-        transform: scale(1.08); 
+
+    50% {
+        transform: scale(1.08);
         filter: drop-shadow(0 0 16px rgba(59, 130, 246, 0.8));
     }
 }
@@ -211,8 +222,17 @@ html, body {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 0.4; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.3); }
+
+    0%,
+    100% {
+        opacity: 0.4;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.3);
+    }
 }
 
 .timio-loading-title {
@@ -279,13 +299,23 @@ html, body {
 }
 
 @keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes orbit {
-    from { transform: translateX(-50%) rotate(0deg) translateY(-100px) rotate(0deg); }
-    to { transform: translateX(-50%) rotate(360deg) translateY(-100px) rotate(-360deg); }
+    from {
+        transform: translateX(-50%) rotate(0deg) translateY(-100px) rotate(0deg);
+    }
+
+    to {
+        transform: translateX(-50%) rotate(360deg) translateY(-100px) rotate(-360deg);
+    }
 }
 
 /* Progress Section */
@@ -324,8 +354,13 @@ html, body {
 }
 
 @keyframes progressGlow {
-    0% { left: -100%; }
-    100% { left: 100%; }
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
+    }
 }
 
 .timio-status-text {
@@ -376,8 +411,15 @@ html, body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .timio-insight-section {
@@ -553,12 +595,10 @@ html, body {
 .timio-image-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(
-        90deg,
-        rgba(45, 45, 45, 0.8) 25%,
-        rgba(55, 55, 55, 0.8) 50%,
-        rgba(45, 45, 45, 0.8) 75%
-    );
+    background: linear-gradient(90deg,
+            rgba(45, 45, 45, 0.8) 25%,
+            rgba(55, 55, 55, 0.8) 50%,
+            rgba(45, 45, 45, 0.8) 75%);
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
     position: absolute;
@@ -567,8 +607,13 @@ html, body {
 }
 
 @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 .timio-pivot-text {
@@ -781,8 +826,13 @@ html, body {
 }
 
 @keyframes spinner-rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Responsive Design */
@@ -790,59 +840,135 @@ html, body {
     .timio-modal-header {
         padding: 20px 16px;
     }
-    
+
     .timio-modal-title {
         font-size: 22px;
     }
-    
+
     .timio-logo {
         width: 56px;
         height: 56px;
     }
-    
+
     .timio-lottie-container {
         width: 280px;
         height: 280px;
     }
-    
+
     .timio-fallback-animation {
         width: 200px;
         height: 200px;
     }
-    
+
     .timio-footer-content {
         flex-direction: column;
         gap: 12px;
     }
-    
+
     .timio-insights-content,
     .timio-pivot-content {
         padding: 20px 16px;
     }
-    
+
     .timio-insight-section,
     .timio-pivot-article {
         border-radius: 14px;
         padding: 20px;
     }
-    
+
     .timio-insight-title {
         font-size: 18px;
     }
-    
+
     .timio-pivot-title {
         font-size: 18px;
     }
-    
+
     .timio-pivot-image {
         height: 180px;
     }
-    
+
     .timio-loading-title {
         font-size: 20px;
     }
-    
+
     .timio-status-text {
         font-size: 14px;
     }
+
+    /* Zarys Styles Begin Below */
+    /* */
+    /* */
+    /* */
+    /* */
+    /* Zarys Styles Begin Below */
+
+    /* Beginning of Pivot Header Styling */
+
+    .z-pivot-content {
+        padding: 16px 20px 8px 20px !important;
+    }
+
+    .z-pivot-content {
+        background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+        padding: 12px 16px !important;
+        margin: 0 0 16px 0 !important;
+        border-radius: 8px !important;
+        border: 1px solid #374151 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .z-pivot-stats-title {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #ffffff !important;
+        margin-bottom: 10px !important;
+        text-align: center !important;
+    }
+
+    .z-pivot-stats-grid {
+        display: flex !important;
+        gap: 8px !important;
+    }
+
+    .z-pivot-stat-item {
+        flex: 1 !important;
+        text-align: center !important;
+        padding: 8px 6px !important;
+        background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
+        border-radius: 6px !important;
+        border: 1px solid #4b5563 !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .z-pivot-stat-item:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .z-pivot-stat-number {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        color: #60a5fa !important;
+        margin-bottom: 3px !important;
+        line-height: 1 !important;
+    }
+
+    .z-pivot-stat-label {
+        font-size: 10px !important;
+        color: #9ca3af !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        font-weight: 500 !important;
+        line-height: 1 !important;
+    }
+
+    /* End of Pivot Header Styling */
+
+    /* Zarys Styles End Here */
+    /* */
+    /* */
+    /* */
+    /* */
+    /* Zarys Styles End Here */
 }

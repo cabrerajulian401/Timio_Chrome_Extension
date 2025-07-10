@@ -1,6 +1,6 @@
 // src/pages/Content/index.js
 
-import Readability from './Readability.js'; 
+import Readability from './Readability.js';
 
 console.log('Hello, world!');
 console.log('Content script loaded');
@@ -26,9 +26,9 @@ console.log('Content script loaded');
                 stack: error.stack
             } : null
         };
-        
+
         console.error('[TIMIO ERROR]:', errorInfo);
-        
+
         // Try to send error to background if extension context is valid
         if (isExtensionContextValid && chrome.runtime && chrome.runtime.sendMessage) {
             try {
@@ -197,41 +197,41 @@ console.log('Content script loaded');
         return `
             <div style="padding: 16px;">
                 ${sections
-                    .map((section) => {
-                        const lines = section.split('\n').filter(line => line.trim());
-                        if (lines.length === 0) return '';
+                .map((section) => {
+                    const lines = section.split('\n').filter(line => line.trim());
+                    if (lines.length === 0) return '';
 
-                        const title = lines[0].replace(/^\*\*|\*\*$/g, '').replace(/^#+\s*/, '').trim();
-                        const points = lines.slice(1).filter(line => line.trim());
+                    const title = lines[0].replace(/^\*\*|\*\*$/g, '').replace(/^#+\s*/, '').trim();
+                    const points = lines.slice(1).filter(line => line.trim());
 
-                        return `
+                    return `
                             <div class="timio-insight-section">
                                 <h3 class="timio-insight-title">${title}</h3>
                                 <ul class="timio-insight-list">
                                     ${points
-                                        .map(point => {
-                                            const cleanPoint = point
-                                                .replace(/^[•\-\*]\s*/, '')
-                                                .replace(/^\d+\.\s*/, '')
-                                                .replace(/^\s*[\-\*]\s*/, '')
-                                                .trim();
-                                            
-                                            if (cleanPoint.length === 0) return '';
-                                            
-                                            return `
+                            .map(point => {
+                                const cleanPoint = point
+                                    .replace(/^[•\-\*]\s*/, '')
+                                    .replace(/^\d+\.\s*/, '')
+                                    .replace(/^\s*[\-\*]\s*/, '')
+                                    .trim();
+
+                                if (cleanPoint.length === 0) return '';
+
+                                return `
                                                 <li class="timio-insight-item">
                                                     ${cleanPoint}
                                                 </li>
                                             `;
-                                        })
-                                        .filter(item => item.trim().length > 0)
-                                        .join('')}
+                            })
+                            .filter(item => item.trim().length > 0)
+                            .join('')}
                                 </ul>
                             </div>
                         `;
-                    })
-                    .filter(section => section.trim().length > 0)
-                    .join('')}
+                })
+                .filter(section => section.trim().length > 0)
+                .join('')}
             </div>
             <div style="text-align: center;">
                 <button class="timio-copy-button">
@@ -287,8 +287,8 @@ console.log('Content script loaded');
         const truncateText = (text, maxLength = 150) => {
             if (!text) return 'No description available';
             text = text.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '');
-            return text.length > maxLength ? 
-                text.substring(0, maxLength).trim() + '...' : 
+            return text.length > maxLength ?
+                text.substring(0, maxLength).trim() + '...' :
                 text;
         };
 
@@ -347,17 +347,16 @@ console.log('Content script loaded');
                                     </svg>
                                     ${date}
                                 </span>
-                                ${
-                                    authorsByline
-                                        ? `<span class="timio-pivot-author">
+                                ${authorsByline
+                        ? `<span class="timio-pivot-author">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                                 <circle cx="12" cy="7" r="4"></circle>
                                             </svg>
                                             ${authorsByline}
                                         </span>`
-                                        : ''
-                                }
+                        : ''
+                    }
                             </div>
                         </div>
                     </a>
@@ -367,6 +366,22 @@ console.log('Content script loaded');
 
         return `
             <div class="timio-pivot-container">
+            <div class="timio-pivot-container">
+            <!-- Added by Zary -->
+            <div class="z-pivot-stats">
+                    <div class="z-pivot-stats-title">Coverage Analysis</div>
+                    <div class="z-pivot-stats-grid">
+                        <div class="z-pivot-stat-item">
+                            <div class="z-pivot-stat-number">${articles.length}</div>
+                            <div class="z-pivot-stat-label">Sources</div>
+                        </div>
+                        <div class="z-pivot-stat-item">
+                            <div class="z-pivot-stat-number">${articles.length}</div>
+                            <div class="z-pivot-stat-label">Perspectives</div>
+                        </div>
+                    </div>
+            </div>
+            <!-- End of Code Added by Zary -->
                 ${articlesHTML}
             </div>
         `;
@@ -413,7 +428,7 @@ console.log('Content script loaded');
         timioModal = document.createElement('div');
         timioModal.id = 'timio-modal';
         timioModal.className = 'timio-modal';
-        
+
         timioModal.innerHTML = `
             <div class="timio-modal-content">
                 <div class="timio-modal-header">
@@ -601,17 +616,17 @@ console.log('Content script loaded');
 
     function showLoadingInModal(title, animationType) {
         openModal();
-        
+
         const modalTitle = timioModal.querySelector('.timio-modal-title');
         const spinner = timioModal.querySelector('.timio-spinner');
         const content = timioModal.querySelector('.timio-insights-content');
         const pivotContent = timioModal.querySelector('.timio-pivot-content');
 
         // Update title with icon
-        const iconUrl = animationType === 'torch' 
+        const iconUrl = animationType === 'torch'
             ? chrome.runtime.getURL('Torch_Icon.png')
             : chrome.runtime.getURL('Pivot_Icon.png');
-        
+
         modalTitle.innerHTML = `
             <img src="${iconUrl}" alt="${animationType}" class="timio-title-icon">
             <span class="timio-title-text">${title}</span>
@@ -623,11 +638,10 @@ console.log('Content script loaded');
         spinner.innerHTML = `
             <div class="timio-loading-container">
                 <div class="timio-loading-header">
-                    <h3 class="timio-loading-title">${
-                        animationType === 'torch'
-                            ? 'Analyzing Article'
-                            : 'Finding Related Articles'
-                    }</h3>
+                    <h3 class="timio-loading-title">${animationType === 'torch'
+                ? 'Analyzing Article'
+                : 'Finding Related Articles'
+            }</h3>
                 </div>
                 
                 <div class="timio-animation-wrapper">
@@ -641,11 +655,10 @@ console.log('Content script loaded');
                         <div class="timio-progress-bar" style="width: 0%;"></div>
                     </div>
                     <p class="timio-status-text">
-                        ${
-                            animationType === 'torch'
-                                ? 'Scanning article...'
-                                : 'Finding related articles...'
-                        }
+                        ${animationType === 'torch'
+                ? 'Scanning article...'
+                : 'Finding related articles...'
+            }
                     </p>
                 </div>
 
@@ -689,15 +702,15 @@ console.log('Content script loaded');
                 if (animationContainer) {
                     // Add initial loading spinner
                     animationContainer.innerHTML = '<div class="timio-spinner-fallback"></div>';
-                    
+
                     try {
                         console.log('Attempting to load Lottie animation...');
                         console.log('Lottie available:', typeof lottie !== 'undefined');
-                        
+
                         if (typeof lottie !== 'undefined') {
                             const animationPath = chrome.runtime.getURL(`assets/animations/${animationType}.json`);
                             console.log('Animation path:', animationPath);
-                            
+
                             // Test if the file exists by fetching it first
                             fetch(animationPath)
                                 .then(response => {
@@ -712,7 +725,7 @@ console.log('Content script loaded');
                                     console.log('Animation data loaded, creating Lottie animation...');
                                     // Clear any fallback content
                                     animationContainer.innerHTML = '';
-                                    
+
                                     lottie.loadAnimation({
                                         container: animationContainer,
                                         renderer: 'svg',
@@ -866,7 +879,7 @@ console.log('Content script loaded');
             chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 try {
                     logInfo('Content script received message:', request);
-                    
+
                     if (request.type === 'TOGGLE_FLOATING_MENU') {
                         applyFloatingMenuVisibility(request.isVisible);
                         sendResponse({ status: 'success' });
@@ -972,7 +985,7 @@ console.log('Content script loaded');
                     title,
                     animationType,
                 });
-                
+
                 showResultsInModal({ error: `Failed to process article: ${error.message}` });
             }
         };
@@ -1236,10 +1249,10 @@ console.log('Content script loaded');
             timioFloatingMenu = document.createElement('div');
             timioFloatingMenu.id = 'timio-floating-menu';
             timioFloatingMenu.style.cssText = 'position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 2147483647 !important; visibility: visible !important; opacity: 1 !important;';
-            
+
             const torchIconUrl = chrome.runtime.getURL('Torch_Icon.png');
             const pivotIconUrl = chrome.runtime.getURL('Pivot_Icon.png');
-            
+
             timioFloatingMenu.innerHTML = `
                 <div class="timio-menu-container">
                     <div class="timio-menu-items">
@@ -1274,7 +1287,7 @@ console.log('Content script loaded');
 
             makeDraggable(timioFloatingMenu);
             restorePosition(timioFloatingMenu);
-            
+
             if (checkExtensionContext()) {
                 chrome.storage.local.get(['isFloatingMenuVisible'], (result) => {
                     if (chrome.runtime.lastError) {
