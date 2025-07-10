@@ -336,8 +336,13 @@
 }
 
 @keyframes spinner-rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .timio-loading-spinner {
@@ -351,7 +356,9 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .timio-progress-section {
@@ -436,8 +443,15 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .timio-insight-section {
@@ -592,6 +606,7 @@
     0% {
         background-position: 200% 200%;
     }
+
     100% {
         background-position: -200% -200%;
     }
@@ -792,7 +807,7 @@
     .timio-modal-header {
         padding: 16px;
     }
-    
+
     .timio-modal-title {
         font-size: 16px;
     }
@@ -801,7 +816,7 @@
         width: 20px;
         height: 20px;
     }
-    
+
     .timio-modal-body {
         padding: 16px;
     }
@@ -814,17 +829,17 @@
         flex-direction: column;
         gap: 8px;
     }
-    
+
     .timio-insight-section,
     .timio-pivot-article {
         border-radius: 8px;
         padding: 16px;
     }
-    
+
     .timio-pivot-image {
         height: 160px;
     }
-    
+
     .timio-lottie-container {
         width: 240px;
         height: 240px;
@@ -850,6 +865,7 @@
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
+
     .timio-menu-items,
     .timio-action-button,
     .timio-menu-button,
@@ -860,7 +876,7 @@
     .timio-modal {
         transition: none;
     }
-    
+
     .timio-image-placeholder,
     .timio-spinner-fallback,
     .timio-loading-spinner {
@@ -871,3 +887,79 @@
         transition: none;
     }
 }
+
+/* Zarys Styles Begin Below */
+/* */
+/* */
+/* */
+/* */
+/* Zarys Styles Begin Below */
+
+/* Beginning of Pivot Header Styling */
+
+.z-pivot-content {
+    padding: 16px 20px 8px 20px !important;
+}
+
+.z-pivot-content {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+    padding: 12px 16px !important;
+    margin: 0 0 16px 0 !important;
+    border-radius: 8px !important;
+    border: 1px solid #374151 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.z-pivot-stats-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    margin-bottom: 10px !important;
+    text-align: center !important;
+}
+
+.z-pivot-stats-grid {
+    display: flex !important;
+    gap: 8px !important;
+}
+
+.z-pivot-stat-item {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 8px 6px !important;
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
+    border-radius: 6px !important;
+    border: 1px solid #4b5563 !important;
+    transition: all 0.2s ease !important;
+}
+
+.z-pivot-stat-item:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.z-pivot-stat-number {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #60a5fa !important;
+    margin-bottom: 3px !important;
+    line-height: 1 !important;
+}
+
+.z-pivot-stat-label {
+    font-size: 10px !important;
+    color: #9ca3af !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+}
+
+/* End of Pivot Header Styling */
+
+/* Zarys Styles End Here */
+/* */
+/* */
+/* */
+/* */
+/* Zarys Styles End Here */
